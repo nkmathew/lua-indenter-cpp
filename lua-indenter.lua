@@ -1,13 +1,14 @@
 -- @Started: December 07, 2013, 08:37:25
--- @Author nkmathew <kipkoechmathew@gmail.com>
+-- @Date: December 15, 2013
+-- @Author: nkmathew <kipkoechmathew@gmail.com>
 
 --[===[
 ### Lire Moi
 ==============
-This is a not so primitive Lua indenter that to do as much 'beautification' 
+This is a not so primitive Lua indenter that tries to do as much 'beautification' 
 as possible. It's different from most indenters out there in that instead of
 simply iterating through every line and matching keywords, it walks the whole 
-file character by character meaning it can do things like:
+file character by character; meaning it can do things like:
 + Detect string and comment regions that shouldn't be indented.
 + It makes it possible to align brackets and indent literal functions in a 
   floating manner like this:
@@ -337,9 +338,9 @@ for str in rawFile:lines() do
       end
     end
     if not skipCurrentCharacter and not inLineComment then
-    -- The string detecting part has to be last in the block so that
-    -- space can be added between equal signs and string quotes.
-    ----------------------------------------------------------------------------
+      -- The string detecting part has to be last in the block so that
+      -- space can be added between equal signs and string quotes.
+      ----------------------------------------------------------------------------
       if currChar:find("'") and not inDoubleQuotedString and not inLongString then
         -- Found the start of a single quoted string
         if inSingleQuotedString then
@@ -348,7 +349,7 @@ for str in rawFile:lines() do
           inSingleQuotedString = true
         end
       end
-    ----------------------------------------------------------------------------
+      ----------------------------------------------------------------------------
       if currChar:find('"') and not (inSingleQuotedString or inLongString) then
         -- Found the start of a double quoted string.
         if inDoubleQuotedString then
@@ -357,8 +358,8 @@ for str in rawFile:lines() do
           inDoubleQuotedString = true
         end
       end
-    -----------------------------LONG STRING DETERMINATION--------------------------------
-    --------------------------------------------------------------------------------------
+      -----------------------------LONG STRING DETERMINATION--------------------------------
+      --------------------------------------------------------------------------------------
       if currChar == "[" and not (inLongString or inSingleQuotedString or inDoubleQuotedString) then
         -- We include inLongString in the condition because nesting of long strings is not
         -- possible. It'll simply be ignored.
@@ -381,7 +382,7 @@ for str in rawFile:lines() do
           n = -999 -- assign dummy value because ]] has zero equal signs between the brackets.
         end
         if n == equalSigns then
-            -- If the equal signs match those found earlier, it means the string/comment has been closed.
+          -- If the equal signs match those found earlier, it means the string/comment has been closed.
           inLongString = false
         end
       end
@@ -391,7 +392,7 @@ for str in rawFile:lines() do
   end
 
   if startsWithString or str:find("^[ \t]*$") then
-      -- Don't indent the line if it starts with a string
+    -- Don't indent the line if it starts with a string
     indentedFile:write(trimmedStr .. "\n")
     print(trimmedStr)
   else
@@ -399,10 +400,13 @@ for str in rawFile:lines() do
       nextIndent = positionList[#positionList][1]
     end
     if addExtraLevel then
+      -- increase the indentation by EXTRA_LEVEL spaces if the line ends with
+      -- 'and', 'or' or '='
       indentedLine = string.rep(" ", currIndent + EXTRA_LEVEL) .. trimmedStr
       print(indentedLine)
       indentedFile:write(indentedLine .. "\n")
     else
+      -- Otherwise indent using the current indentation
       indentedLine = string.rep(" ", currIndent) .. trimmedStr
       print(indentedLine)
       indentedFile:write(indentedLine .. "\n")
