@@ -66,22 +66,9 @@ function IsIncreaser(token)
          token == "for"
 end
 
-
 function IsDecreaser(token)
   return token == "end" or token == "until"
 end
-
-function debug(...)
-  print(string.format(...))
-end
-
-function debugList()
-  for i, v in ipairs(positionList) do
-    debug("--%s-- [1]: %s, [2]: %s, Line: %s", i, v[1], v[2], v.line)
-  end
-end
-
-
 
 -------------------------------------------------------------------------------
 -- Takes a string, an index and the characters adjacent to the character at that
@@ -239,24 +226,19 @@ for str in rawFile:lines() do
       escaped = false
       -- If Lua had a continue statement, it would have been here so that we skip this
       -- character. Another variable is used to achieve this.
-      --debug("--escaped character at (%d, %d)", lineNumber, i)
       skipCurrentCharacter = true
     end
     if currChar == "\\" and not inLongString and not skipCurrentCharacter then
       escaped = true
-      --debug("--escaped character at (%d, %d)", lineNumber, i)
     end
 
     if (str:find("^[ \t]*-%-[^[]", i) or str:find("^#")) and not
       (inSingleQuotedString or inDoubleQuotedString or inLongString) then
       -- If it finds a line comment, it should preserve the comment and all the
       -- space before it. It assumes that long comments start this way "--["
-      -- debug("found line comment at '%s': (%d, %d)", currChar, lineNumber, i)
       inLineComment = true
-      --debug("Found line comment at (%d, %d)", lineNumber, i)
       if str:find("^[ \t]*-%-") then
         if INDENT_COMMENTS then
-          --print(string.format('--"%s", "%s" %d curr="%s"', str,  str:gsub("^[\t ]*", ""), lineNumber, currChar))
           str = str:gsub("^[ \t]*", "")
           currChar = "-" -- gsubbing the string above causes loss of one "-". this line restores it 
           startsWithString = false
@@ -267,10 +249,8 @@ for str in rawFile:lines() do
     end
     if inSingleQuotedString or inDoubleQuotedString or inLongString or inLineComment then
       -- Append the characters the way they come so that the string/comment does not change
-      --print(string.format("'%s'", trimmedStr))
       trimmedStr = trimmedStr .. currChar
       foundLogicalOperator = false
-      --print("-->in string", lineNumber, i, inLineComment, inSingleQuotedString, currChar)
     else
       foundLogicalOperator = str:find("[ )]and *$") or str:find("[ )]or *$") or str:find("= *$")
       if COMPACT then
@@ -283,25 +263,18 @@ for str in rawFile:lines() do
         trimmedStr = trimmedStr .. currChar
       end
       ---------------------------------------------------------------
-      --debugList(positionList)
       if currChar:find("[({]") then
         trimmedLength = string.len(trimmedStr)
-        --debug("--curr-indent before bracket: %d %d", currIndent, nextIndent)
         if ALIGN_BRACKETS then
           table.insert(positionList, {currIndent + trimmedLength, trimmedLength, line = lineNumber})
         else
           nextIndent = nextIndent + INDENT_LEVEL
           table.insert(positionList, {nextIndent, INDENT_LEVEL, line = lineNumber})
         end
-        --debug("+++++bracket '%s' at (%d, %d)", currChar, lineNumber, i)
-        --debug("--curr-indent at bracket: %d %d", currIndent, nextIndent)
-        --debug("--list at bracket: %s", table.concat(positionList[#positionList], " "))
       elseif currChar:find("[)}]") then
         pos = table.remove(positionList)
         if #positionList > 0 then
-          --debug("--before subtracting bracket %d", nextIndent)
           nextIndent = nextIndent - pos[2]
-          --debug("--after subtracting bracket %d", nextIndent)
           if not ALIGN_BRACKETS then
             if str:find("^[\t ]*[})]") then
               -- Makes sure that the closing bracket aligns with the head keyword like so:
@@ -318,7 +291,6 @@ for str in rawFile:lines() do
             end
           end
         end
-        --print("+++++found closing bracket at: ", nextIndent, currIndent, trimmedLength)
       end
       ---------------------------------------------------------------
       previousToken = token
@@ -336,31 +308,25 @@ for str in rawFile:lines() do
             -- 'do' and 'for' are both increasers and since they can both be used together, you have
             -- to decide which keyword's position you are going to cache. This if loop makes sure that
             -- if a 'for' statement comes before a 'do', the 'do' keyword will be ignored.
-            --debug("--curr-indent at increaser: %s", currIndent)
             if BASIC_INDENTATION then
               nextIndent = nextIndent + INDENT_LEVEL
               table.insert(positionList, {nextIndent, 0, line = lineNumber})
-              --debug("--increaser: '%s' next-indent: %s", token, nextIndent)
             else
               indent = currIndent + (string.len(trimmedStr) - 1) + INDENT_LEVEL
               -- the second value in the list is used to calculate the position of 'end' or
               -- 'until' so that it aligns with the head keyword.
               table.insert(positionList, {indent, string.len(trimmedStr) - 1, line = lineNumber})
             end
-            --print(string.format("-- prev: '%s' curr: '%s'", previousToken, token))
           end
         elseif token == "elseif" or token == "else" then
           pos = positionList[#positionList]
           if pos.line ~= lineNumber then
-            --print("--", pos.line)
             currIndent = currIndent - INDENT_LEVEL
           end
         elseif IsDecreaser(token) and token ~= "" then
-          --debug("--decreaser: '%s' line: %d", token, lineNumber)
           pos = table.remove(positionList)
           assert(pos, string.format("Excess 'end' statements: (%d, %d)", lineNumber, i))
           if pos.line ~= lineNumber then
-            -- print("+++Next indent: ", pos[2], token, lineNumber)
             currIndent = pos[1] - INDENT_LEVEL
           end
           nextIndent = nextIndent - pos[2] - INDENT_LEVEL
@@ -376,7 +342,6 @@ for str in rawFile:lines() do
     ----------------------------------------------------------------------------
       if currChar:find("'") and not inDoubleQuotedString and not inLongString then
         -- Found the start of a single quoted string
-        --debug("--Single quote at (%d, %d)", lineNumber, i)
         if inSingleQuotedString then
           inSingleQuotedString = false
         else
@@ -421,7 +386,6 @@ for str in rawFile:lines() do
         end
       end
     elseif skipCurrentCharacter then
-        --debug("-- skipping character '%s' (%d, %d) %s %s", currChar, lineNumber, i, skipCurrentCharacter, escaped)
       skipCurrentCharacter = false
     end
   end
@@ -432,15 +396,11 @@ for str in rawFile:lines() do
     print(trimmedStr)
   else
     if #positionList > 0 then
-          --debug("Before assigning: %d", nextIndent)
       nextIndent = positionList[#positionList][1]
-          --debug("after assigning: %d", nextIndent)
-          --print("Next indent: ", nextIndent, lineNumber)
     end
     if addExtraLevel then
       indentedLine = string.rep(" ", currIndent + EXTRA_LEVEL) .. trimmedStr
       print(indentedLine)
-          --nextIndent = nextIndent - EXTRA_LEVEL
       indentedFile:write(indentedLine .. "\n")
     else
       indentedLine = string.rep(" ", currIndent) .. trimmedStr
@@ -448,9 +408,6 @@ for str in rawFile:lines() do
       indentedFile:write(indentedLine .. "\n")
     end
   end
-
-  --debug("++Curr-level: %d, Next-level: %d, LINE: %d", currIndent, nextIndent, lineNumber)
-  --print(table.concat(positionList, " "))
 end
 
 rawFile:close()
