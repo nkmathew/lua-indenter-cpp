@@ -25,8 +25,9 @@ indent.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-
 --indent-comments, -ic  ## Causes comments to be indented like a normal line.
                            It's false by default in order to preseve any deliberate comment layout.
 
---no-compact, -nc       ## Instructs the program to indent without messing with the comment 
-                           layout.
+--no-compact, -nc       ## Instructs the program to indent without messing with the
+                           program layout like aligned equal signs or aligned tables(like the network 
+                           table below)
 
 --align-brackets, -ab   ## Aligns brackets like this:
                             network = {{name = "grauna",  IP = "210.26.30.34"},
