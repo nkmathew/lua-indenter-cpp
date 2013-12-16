@@ -43,6 +43,41 @@ indent.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-
                           It's default status is false. Using this option will give
                           you an indentation like the hypotenuse function mentioned earlier.
 
+TIP: To get true 'floating' indentation use both the `-nb` and `-ab` option. par example:
+
+    describe('communicating with clients',
+             function()
+               local s
+               local on_new_echo_client
+               before(function()
+                        s = server.copas.listen
+                        {port = port,
+                         protocols = {echo = function(client)
+                                               on_new_echo_client(client)
+                                             end
+                                      }
+                         }
+                      end)
+             end)
+        -- The drawback of this is that it can take up too much screen real estate.
+It looks like this with the default options:
+
+    describe('communicating with clients',
+      function()
+        local s
+        local on_new_echo_client
+        before(function()
+            s = server.copas.listen
+            {port = port,
+              protocols = {echo = function(client)
+                  on_new_echo_client(client)
+                end
+              }
+            }
+          end)
+      end)
+
+
 ### How it works
 ================
 It iterates through every character in the string/file and when a keyword like 'if' or
@@ -83,7 +118,7 @@ end
 -- This function is called for every iteration of the string.
 -------------------------------------------------------------------------------
 function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrevPrevChar)
-  local trimmedStr = str
+  local trimmedLine = str
   -- NOTE: The statements below don't actually add space after a character. Adding 
   -- a space after a plus sign(+) for example is done by testing if the previous character 
   -- is plus sign(+) and appending a space before appending the current character.
@@ -95,14 +130,14 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       if not (currChar == "-" and prevChar == "-") then
         -- The test prevents it from splitting the two dash signs
         -- that indicate a comment
-        trimmedStr = trimmedStr .. " "
+        trimmedLine = trimmedLine .. " "
       end
     elseif currChar == "=" and not prevChar:find("[=>%<~]") then
       -- Add a space before == and = without splitting ==
-      trimmedStr = trimmedStr .. " "
+      trimmedLine = trimmedLine .. " "
     elseif currChar == "." and not prevChar:find("[.)(,]") and nextChar == "." then
       -- Add a space before ..
-      trimmedStr = trimmedStr .. " "
+      trimmedLine = trimmedLine .. " "
     end
   end
   if not currChar:find("[\t ]") and not currChar:find("[%]) ]") then
@@ -118,19 +153,19 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       and not (prevChar == ")" and currChar:find("[.:,%[+-*/=^]")) -- Don't split sth like ("This"):find("i")
       then
       -- Add a space after operators(+, -, *, /) and the operands
-      trimmedStr = trimmedStr .. " "
+      trimmedLine = trimmedLine .. " "
     elseif prevPrevChar:find("[~>%<=]") and prevChar == "=" and currChar ~= " " then
       -- Add a space after <=, =>, ~=, ==
-      trimmedStr = trimmedStr .. " "
+      trimmedLine = trimmedLine .. " "
     elseif currChar ~= "=" and prevChar:find("[>%<]") then
       -- Add a space after <, > without affecting <=, =>
-      trimmedStr = trimmedStr .. " "
+      trimmedLine = trimmedLine .. " "
     elseif prevChar == "=" and not prevPrevChar:find("[>%<=~]") and currChar ~= "=" then
       -- Add a space after = without splitting ==
-      trimmedStr = trimmedStr .. " "
+      trimmedLine = trimmedLine .. " "
     elseif currChar ~= "." and prevChar == "." and prevPrevChar == "." then
       -- Add a space after ..
-      trimmedStr = trimmedStr .. " "
+      trimmedLine = trimmedLine .. " "
     end
   end
   ------------------------------------------------------------------------------------
@@ -143,9 +178,9 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
     -- not a space or a tab or a zero length string that way it strips all whitespace before
     -- the string. The last part of the test expression makes sure all trailing spaces are removed by not
     -- copying the first whitespace
-    trimmedStr = trimmedStr .. currChar
+    trimmedLine = trimmedLine .. currChar
   end
-  return trimmedStr
+  return trimmedLine
 end
 
 escaped = false
@@ -181,7 +216,8 @@ COMPACT = true
 EXTRA_LEVEL = 7
 INDENT_COMMENTS = false
 
-for i, v in ipairs(arg) do
+-- Process commandline arguments
+for _, v in ipairs(arg) do
   if v == "--no-basic" or v == "-nb" then
     BASIC_INDENTATION = false
   elseif v == "--indent-comments" or v == "-ic" then
@@ -196,10 +232,10 @@ end
 foundLogicalOperator = false --used to implement EXTRA_LEVEL
 rawFile = assert(io.open(arg[1], "r")) -- The filename must be the first argument
 token = ""
-for str in rawFile:lines() do
+for line in rawFile:lines() do
   inLineComment = false
   lineNumber = lineNumber + 1
-  trimmedStr = ""
+  trimmedLine = ""
   currIndent = nextIndent
   skipCurrentCharacter = false
   -- add extra level if the line ends with 'and' or 'or'. Another variable is needed so that
@@ -210,21 +246,21 @@ for str in rawFile:lines() do
   -- of moving the indentation part from the end to here and re-adjusting the
   -- variables.
   startsWithString = inSingleQuotedString or inDoubleQuotedString or inLongString
-  if not startsWithString and not str:find("^[ \t]*-%-") then
+  if not startsWithString and not line:find("^[ \t]*-%-") then
     -- strip leading whitespace only if this line is not in a string or starts with a comment
-    str = string.gsub(str, "^[\t ]*", "")
+    line = string.gsub(line, "^[\t ]*", "")
   end
-  for i = 1, string.len(str) do
-    currChar = str:charAt(i)
-    local nextChar = str:charAt(i + 1)
+  for i = 1, string.len(line) do
+    currChar = line:charAt(i)
+    local nextChar = line:charAt(i + 1)
     -- Since indexing starts from 1, getting the previous characater this
     -- way is safe.
-    local prevChar = str:charAt(i - 1)
+    local prevChar = line:charAt(i - 1)
     local prevPrevChar = ""
     if i ~= 1 then
       -- This if condition is necessary in case the index is 1 which would
       -- give us the last character of the string.
-      prevPrevChar = str:charAt(i - 2)
+      prevPrevChar = line:charAt(i - 2)
     end
     if escaped then
       escaped = false
@@ -236,14 +272,14 @@ for str in rawFile:lines() do
       escaped = true
     end
 
-    if (str:find("^[ \t]*-%-[^[]", i) or str:find("^#")) and not
+    if (line:find("^[ \t]*-%-[^[]", i) or line:find("^#")) and not
       (inSingleQuotedString or inDoubleQuotedString or inLongString) then
       -- If it finds a line comment, it should preserve the comment and all the
       -- space before it. It assumes that long comments start this way "--["
       inLineComment = true
-      if str:find("^[ \t]*-%-") then
+      if line:find("^[ \t]*-%-") then
         if INDENT_COMMENTS then
-          str = str:gsub("^[ \t]*", "")
+          line = line:gsub("^[ \t]*", "")
           currChar = "-" -- gsubbing the string above causes loss of one "-". this line restores it 
           startsWithString = false
         else
@@ -253,22 +289,22 @@ for str in rawFile:lines() do
     end
     if inSingleQuotedString or inDoubleQuotedString or inLongString or inLineComment then
       -- Append the characters the way they come so that the string/comment does not change
-      trimmedStr = trimmedStr .. currChar
+      trimmedLine = trimmedLine .. currChar
       foundLogicalOperator = false
     else
-      foundLogicalOperator = str:find("[ )]and *$") or str:find("[ )]or *$") or str:find("= *$")
+      foundLogicalOperator = line:find("[ )]and *$") or line:find("[ )]or *$") or line:find("= *$")
       if COMPACT then
         prevPrevPrevChar = ""
-        prevPrevPrevChar = trimmedStr:charAt(-3)
-        p1 = trimmedStr:charAt(-1)
-        p2 = trimmedStr:charAt(-2)
-        trimmedStr = AppendChar(trimmedStr, p1, currChar, nextChar, p2, i, prevPrevPrevChar)
+        prevPrevPrevChar = trimmedLine:charAt(-3)
+        char1 = trimmedLine:charAt(-1) -- Previous character in the trimmed line
+        char2 = trimmedLine:charAt(-2) -- Previous previous character in the trimmed line
+        trimmedLine = AppendChar(trimmedLine, char1, currChar, nextChar, char2, i, prevPrevPrevChar)
       else
-        trimmedStr = trimmedStr .. currChar
+        trimmedLine = trimmedLine .. currChar
       end
       ---------------------------------------------------------------
       if currChar:find("[({]") then
-        trimmedLength = string.len(trimmedStr)
+        trimmedLength = string.len(trimmedLine)
         if ALIGN_BRACKETS then
           table.insert(positionList, {currIndent + trimmedLength, trimmedLength, line = lineNumber})
         else
@@ -280,8 +316,13 @@ for str in rawFile:lines() do
         if #positionList > 0 then
           nextIndent = nextIndent - pos[2]
           if not ALIGN_BRACKETS then
-            if str:find("^[\t ]*[})]") then
-              -- Makes sure that the closing bracket aligns with the head keyword like so:
+            if line:find("^[\t ]*[})]") then
+               --[[Makes sure that the closing bracket aligns with the head keyword like so:
+                      return {
+                         "Sherlock";
+                         "Watson" 
+                      }
+              ]]
               currIndent = currIndent - INDENT_LEVEL
             end
           end
@@ -289,8 +330,8 @@ for str in rawFile:lines() do
           -- If the list is empty, the next line will have zero indentation
           nextIndent = 0
           if not ALIGN_BRACKETS then
-            if str:find("^[\t ]*[})]") then
-              -- Makes sure that the closing bracket aligns with the head keyword like so:
+            if line:find("^[\t ]*[})]") then
+              -- Makes sure that the closing bracket aligns with the head keyword as shown earlier.
               currIndent = currIndent - INDENT_LEVEL
             end
           end
@@ -301,10 +342,10 @@ for str in rawFile:lines() do
       if (prevChar:find("[ \t>%<=+-*/^({,]") or prevChar == "") and currChar:find("[eiuwfdr]") then
         -- Test the characters that keywords start with instead of
         -- assuming that there'll always be a space before a keyword.
-        substr = string.gsub(string.sub(str, i), "^[\t ]*", "") -- Slice to the end and strip leading whitespace
-        _, nextSpace = string.find(substr, "[%(}) \t\n,{;\r]") -- Find the first space. The asterisk caters for a no match case
+        substr = string.gsub(string.sub(line, i), "^[\t ]*", "") -- Slice to the end and strip leading whitespace
+        _, nextSpace = string.find(substr, "[%(}) \t\n,{;\r-]") -- Find the first space. The asterisk caters for a no match case
         token = string.sub(substr, 1, nextSpace) -- Get the token / keyword / function name
-        token = string.gsub(token, "[%(}) \t\n,{;\r]", "")
+        token = string.gsub(token, "[%(}) \t\n,{;\r-]", "")
         --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         -- Indentation level is determined here.
         if IsIncreaser(token) and token ~= "" then
@@ -316,10 +357,10 @@ for str in rawFile:lines() do
               nextIndent = nextIndent + INDENT_LEVEL
               table.insert(positionList, {nextIndent, 0, line = lineNumber})
             else
-              indent = currIndent + (string.len(trimmedStr) - 1) + INDENT_LEVEL
+              indent = currIndent + (string.len(trimmedLine) - 1) + INDENT_LEVEL
               -- the second value in the list is used to calculate the position of 'end' or
               -- 'until' so that it aligns with the head keyword.
-              table.insert(positionList, {indent, string.len(trimmedStr) - 1, line = lineNumber})
+              table.insert(positionList, {indent, string.len(trimmedLine) - 1, line = lineNumber})
             end
           end
         elseif token == "elseif" or token == "else" then
@@ -368,7 +409,7 @@ for str in rawFile:lines() do
         -- possible. It'll simply be ignored.
         -- NOTE: inLongString includes both long/multiline comments since they pretty much look
         -- the same the difference being the two dashes.
-        s, e = string.find(str, "^=*%[", i + 1)
+        s, e = string.find(line, "^=*%[", i + 1)
         if s then
           equalSigns = e - s -- number of equal signs found
           inLongString = true
@@ -377,7 +418,7 @@ for str in rawFile:lines() do
         -- Possibly the end of a long string. Find the number of equal signs before this point
         -- and compare with the equal signs found earlier when the opening round bracket was
         -- found
-        substr = string.sub(str, 1, i)
+        substr = string.sub(line, 1, i)
         s, e = string.find(substr, "%]=*%]$")
         if s then
           n = e - s - 1 -- number of equal signs found
@@ -394,10 +435,10 @@ for str in rawFile:lines() do
     end
   end
 
-  if startsWithString or str:find("^[ \t]*$") then
+  if startsWithString or line:find("^[ \t]*$") then
     -- Don't indent the line if it starts with a string
-    indentedFile:write(trimmedStr .. "\n")
-    print(trimmedStr)
+    indentedFile:write(trimmedLine .. "\n")
+    print(trimmedLine)
   else
     if #positionList > 0 then
       nextIndent = positionList[#positionList][1]
@@ -405,12 +446,12 @@ for str in rawFile:lines() do
     if addExtraLevel then
       -- increase the indentation by EXTRA_LEVEL spaces if the line ends with
       -- 'and', 'or' or '='
-      indentedLine = string.rep(" ", currIndent + EXTRA_LEVEL) .. trimmedStr
+      indentedLine = string.rep(" ", currIndent + EXTRA_LEVEL) .. trimmedLine
       print(indentedLine)
       indentedFile:write(indentedLine .. "\n")
     else
       -- Otherwise indent using the current indentation
-      indentedLine = string.rep(" ", currIndent) .. trimmedStr
+      indentedLine = string.rep(" ", currIndent) .. trimmedLine
       print(indentedLine)
       indentedFile:write(indentedLine .. "\n")
     end
