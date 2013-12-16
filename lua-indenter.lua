@@ -52,9 +52,10 @@ storing the position of the keyword, the current level is added to the indentati
 and pushed to the list.
 
 ### Shortcomings
-It doesn't handle 'CR' endings very well, io.lines is probably to blame.
-It always writes with 'LF' endings.
-
++ It doesn't handle 'CR' endings very well, io.lines is probably to blame.
++ It always writes with 'LF' endings.
++ It always inserts an extra line in the file if the file doesn't end with one.
+Preserving line endings is not as easy at it looks like.
 ]===]
 
 function string:charAt(index)
