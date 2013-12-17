@@ -43,7 +43,7 @@ indent.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-
                           It's default status is false. Using this option will give
                           you an indentation like the hypotenuse function mentioned earlier.
 
-TIP: To get true 'floating' indentation use both the `-nb` and `-ab` option. par example:
+TIP: To get true aligned indentation use both the `-nb` and `-ab` option. par example:
 
     describe('communicating with clients',
              function()
@@ -92,6 +92,7 @@ and pushed to the list.
 + It doesn't handle 'CR' endings very well, io.lines is probably to blame.
 + It always writes with 'LF' endings.
 + It always inserts an extra line in the file if the file doesn't end with one.
++ Does not indent with tabs
 Preserving line endings is not as easy at it looks like.
 ]===]
 
@@ -100,6 +101,8 @@ function string:charAt(index)
 end
 
 function IsIncreaser(token)
+  -- An alternative to this function would be to use a table with the keywords 
+  -- as keys and their values as true
   return token == "if" or token == "function" or
          token == "while" or token == "repeat" or token == "do" or
          token == "for"
@@ -230,7 +233,8 @@ for _, v in ipairs(arg) do
 end
 
 foundLogicalOperator = false --used to implement EXTRA_LEVEL
-rawFile = assert(io.open(arg[1], "r")) -- The filename must be the first argument
+ -- The filename must be the first argument
+rawFile = assert(io.open(arg[1], "r"), string.format("Invalid filename: `%s'", arg[1]))
 token = ""
 for line in rawFile:lines() do
   inLineComment = false
@@ -458,8 +462,11 @@ for line in rawFile:lines() do
   end
 end
 
+
 rawFile:close()
 indentedFile:close()
 assert(os.remove(arg[1]))
 assert(os.rename("indented-file.lua", arg[1]))
+assert(not (inLongString or inSingleQuotedString or inDoubleQuotedString),
+  "You have unclosed strings")
 
