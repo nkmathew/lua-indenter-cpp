@@ -93,7 +93,13 @@ and pushed to the list.
 + It always writes with 'LF' endings.
 + It always inserts an extra line in the file if the file doesn't end with one.
 + Does not indent with tabs
-Preserving line endings is not as easy at it looks like.
++ It doesn't space signed numbers very well even though the results are still valid code. An
+  example is `val=52/65*-52` which will be spaced to `val = 52 / 65 *  - 52` and to 
+  `val = 52 / 65 * - 52` if you rerun it the second time. However, it won't
+  split the number and the sign if you attempt to space the numbers yourself
+  like this `val = 52/65* -52`. Fixing something like this requires looking 
+  at the fourth or fifth previous characters. Seems like too much for me.
+
 ]===]
 
 function string:charAt(index)
@@ -148,9 +154,9 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
     -- one. If the current character is a square bracket, don't add a
     -- space because it is part of a long string or comment
     if prevChar:find("[-/+*^,)%%]")
-      and not (prevPrevChar:find("[(]") and prevChar:find("[+-]")) -- Don't split sth like print(-3)
+      and not (prevPrevChar:find("[(=/*]") and prevChar:find("[+-]")) -- Don't split sth like print(-3)
       and not (prevPrevPrevChar:find("[,]") and prevChar:find("[+-]")) -- Don't split print(-3, -3)
-      and not (prevPrevPrevChar:find("[=]") and prevChar:find("[+-]")) -- Don't split sign in var = -3
+      and not (prevPrevPrevChar:find("[=*^/]") and prevChar:find("[+-]")) -- Don't split sign in var = -3
       and not (currChar == "-" and prevChar == "-") -- Don't split comment markers
       and not (prevChar == "-" and currChar == "[") -- Don't put a space btw square bracket and comment marker
       and not (prevChar == ")" and currChar:find("[.:,%[+-*/=^]")) -- Don't split sth like ("This"):find("i")
