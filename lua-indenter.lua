@@ -1,112 +1,117 @@
--- @Started: December 07, 2013, 08:37:25
--- @Date: December 15, 2013
--- @Author: nkmathew <kipkoechmathew@gmail.com>
+  
+--[===[  
 
---[===[
-### Lire Moi
-==============
-This is a not so primitive Lua indenter that tries to do as much 'beautification' 
-as possible. It's different from most indenters out there in that instead of
-simply iterating through every line and matching keywords, it walks the whole 
-file character by character; meaning it can do things like:
-+ Detect string and comment regions that shouldn't be indented.
-+ It makes it possible to align brackets and indent literal functions in a 
-  floating manner like this:
-    hypotenuse = function(base, height)
-                   return math.sqrt(base * base + height * height)
-                 end
-+ It also makes it possible to space operators without affecting strings like
- when you use regular expressions
+## lua-indenter.lua
+**Started:** December 07, 2013, 08:37:25  
+**Date:** December 15, 2013  
+**Author:** nkmathew <kipkoechmathew@gmail.com>  
+**Revision:** 17
 
-### Usage 
-===============
-indent.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-brackets]]
+This is a not so primitive Lua indenter that tries to do as much 'beautification'  
+as possible. It's different from most indenters out there in that instead of  
+simply iterating through every line and matching keywords, it walks the whole  
+file character by character; meaning it can do things like:  
 
---indent-comments, -ic  ## Causes comments to be indented like a normal line.
-                           It's false by default in order to preseve any deliberate comment layout.
++ Detect string and comment regions that shouldn't be indented.  
++ Align head and terminating keywords anywhere on the line:  
 
---no-compact, -nc       ## Instructs the program to indent without messing with the
-                           program layout like aligned equal signs or aligned tables(like the network 
-                           table below)
+                hypotenuse = function(base, height)  
+                               return math.sqrt(base * base + height * height)  
+                             end  
 
---align-brackets, -ab   ## Aligns brackets like this:
-                            network = {{name = "grauna",  IP = "210.26.30.34"},
-                                       {name = "arraial", IP = "210.26.30.23"},
-                                       {name = "lua",     IP = "210.26.23.12"},
-                                       {name = "derain",  IP = "210.26.23.20"},
-                                       }
-                            when ALIGN_BRACKETS is false, brackets will cause an
-                            increase in the indentation level by INDENT_LEVEL spaces.
++ Insert spaces between operators without affecting strings or comments, something  
+  that can be quite hard with regular expressions(at least with Lua's)  
+  
+###Usage  
 
---no-basic, -nb        ## Strives to align the head keyword with the terminating
-                            keyword no matter where it is in the line
-                          It's default status is false. Using this option will give
-                          you an indentation like the hypotenuse function mentioned earlier.
+    lua-indenter.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-brackets]]  
+      
+    --indent-comments, -ic  ## Causes line comments(not long comments) to be indented like every other line.  
+                               It's false by default in order to preseve any deliberate comment layout.  
 
-TIP: To get true aligned indentation use both the `-nb` and `-ab` option. par example:
+    --no-compact, -nc       ## Instructs the program to indent without messing with the  
+                               program layout like aligned equal signs or aligned tables(like the `network`  
+                               table below)  
+      
+    --align-brackets, -ab   ## Aligns brackets like this:  
+                                network = {{name = "grauna",  IP = "210.26.30.34"},  
+                                           {name = "arraial", IP = "210.26.30.23"},  
+                                           {name = "lua",     IP = "210.26.23.12"},  
+                                           {name = "derain",  IP = "210.26.23.20"},  
+                                           }  
+                                when ALIGN_BRACKETS is false, brackets will cause an  
+                                increase in the indentation level by INDENT_LEVEL spaces.  
+      
+    --no-basic, -nb        ## Strives to align the head keyword with the terminating  
+                                keyword no matter where it is in the line  
+                              It's default status is false. Using this option will give  
+                              you an indentation like the hypotenuse function mentioned earlier.  
+      
+**TIP**: To get total alignment use both the **-nb** and **-ab** option. par example:  
+      
+        describe('communicating with clients',  
+                 function()  
+                   local s  
+                   local on_new_echo_client  
+                   before(function()  
+                            s = server.copas.listen  
+                            {port = port,  
+                             protocols = {echo = function(client)  
+                                                   on_new_echo_client(client)  
+                                                 end  
+                                          }  
+                             }  
+                          end)  
+                 end)  
+            -- The drawback of this is that it can take up too much screen real estate.  
+    The above code would look like this with the default options:  
+      
+        describe('communicating with clients',  
+          function()  
+            local s  
+            local on_new_echo_client  
+            before(function()  
+                s = server.copas.listen  
+                {port = port,  
+                  protocols = {echo = function(client)  
+                      on_new_echo_client(client)  
+                    end  
+                  }  
+                }  
+              end)  
+          end)  
+      
+  
+###How it works  
 
-    describe('communicating with clients',
-             function()
-               local s
-               local on_new_echo_client
-               before(function()
-                        s = server.copas.listen
-                        {port = port,
-                         protocols = {echo = function(client)
-                                               on_new_echo_client(client)
-                                             end
-                                      }
-                         }
-                      end)
-             end)
-        -- The drawback of this is that it can take up too much screen real estate.
-It looks like this with the default options:
+It iterates through every character in the string/file and when a keyword like *if* or  
+*function* is found, it's position is pushed to a list and later popped back when an end  
+of block keyword like *end* and *until* is found. That popped position is used to restore  
+the *end* or *until* keyword to the same level as the *function* or *if* keyword.  
+If **--basic** option is used, the MO is the same only that instead of storing the  
+position of the keyword, the current level is added to the indentation level and  
+pushed to the list.  
 
-    describe('communicating with clients',
-      function()
-        local s
-        local on_new_echo_client
-        before(function()
-            s = server.copas.listen
-            {port = port,
-              protocols = {echo = function(client)
-                  on_new_echo_client(client)
-                end
-              }
-            }
-          end)
-      end)
+###Revision History
 
++ 18th December 2013  
+    - Can now handle files with CR line endings.  
+    - Does not insert an extra line at the end of the file.  
+    - Preserves the file's line ending
+    - Does not split the negative sign and the number in calculations.
 
-### How it works
-================
-It iterates through every character in the string/file and when a keyword like 'if' or
-'function' is found, it's position is pushed to a list and later popped back when an end
-of block keyword like 'end' and 'until' is found. That popped position is used to restore 
-the 'end' or 'until' keyword to the same level as the 'function' or 'if' keyword giving it
-the floating effect. If basic mode is specified, the MO is the same only that instead of 
-storing the position of the keyword, the current level is added to the indentation level 
-and pushed to the list.
+###What it doesn't do  
 
-### Shortcomings
-+ It doesn't handle 'CR' endings very well, io.lines is probably to blame.
-+ It always writes with 'LF' endings.
-+ It always inserts an extra line in the file if the file doesn't end with one.
-+ Does not indent with tabs
-+ It doesn't space signed numbers very well even though the results are still valid code. An
-  example is `val=52/65*-52` which will be spaced to `val = 52 / 65 *  - 52` and to 
-  `val = 52 / 65 * - 52` if you rerun it the second time. However, it won't
-  split the number and the sign if you attempt to space the numbers yourself
-  like this `val = 52/65* -52`. Fixing something like this requires looking 
-  at the fourth or fifth previous characters. Seems like too much for me.
++ Indent with tabs.  
+
 
 ]===]
 
-function string:charAt(index)
-  return string.sub(self, index, index)
+function string:charAt(index) 
+  return string.sub(self, index, index) 
 end
 
-function IsIncreaser(token)
+function IsIncreaser(token) 
   -- An alternative to this function would be to use a table with the keywords 
   -- as keys and their values as true
   return token == "if" or token == "function" or
@@ -114,9 +119,39 @@ function IsIncreaser(token)
          token == "for"
 end
 
-function IsDecreaser(token)
+function IsDecreaser(token) 
   return token == "end" or token == "until"
 end
+
+-- Splits the text into an array of separate lines.
+function split(text, sep) 
+  sep = sep or "\n"
+  local lines = {}
+  local pos = 1
+  while true do
+    local b, e = text:find(sep, pos) 
+    if not b then
+      --  If the string doesn't end with the separator, add the rest to the table
+      --  and exit
+      table.insert(lines, text:sub(pos)) 
+      break
+    end
+    table.insert(lines, text:sub(pos, b - 1)) 
+    pos = e + 1
+  end
+  return lines
+end
+
+
+function mapConcatenate(tbl, char) 
+  -- Maps the character to every string in the table.
+  local table = tbl
+  for i, v in ipairs(table) do
+    table[i] = table[i] .. char
+  end
+  return table
+end
+
 
 -------------------------------------------------------------------------------
 -- Takes a string, an index and the characters adjacent to the character at that
@@ -126,13 +161,15 @@ end
 -- prevChar, prevPrevChar and prevPrevPrevChar refer to the trimmed string.
 -- This function is called for every iteration of the string.
 -------------------------------------------------------------------------------
-function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrevPrevChar)
+function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrevPrevChar) 
   local trimmedLine = str
+  -- This functions contains hacks that enable the program to space operators correctly. 
+  -- I had to experiment a little before getting them right.
   -- NOTE: The statements below don't actually add space after a character. Adding 
   -- a space after a plus sign(+) for example is done by testing if the previous character 
   -- is plus sign(+) and appending a space before appending the current character.
   if not prevChar:find("[\t ]") and i ~= 1 and not currChar:find("[%])[:]") then
-    if currChar:find("[%^>%<-/~+*]") and not currChar:find("[ \t]")
+    if currChar:find("[%^>%<-/~+*]") and not currChar:find("[ \t]") 
       and not prevChar:find("[({%[=,]") -- Don't add space after opening bracket
       then
       -- Add a space before operators(+, -, *, /) and the operands
@@ -153,11 +190,11 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
     -- If the next character after the operator is not a space add
     -- one. If the current character is a square bracket, don't add a
     -- space because it is part of a long string or comment
-    if prevChar:find("[-/+*^,)%%]")
+    if prevChar:find("[-/+*^,)%%]") 
       and not (prevPrevChar:find("[(=/*]") and prevChar:find("[+-]")) -- Don't split sth like print(-3)
       and not (prevPrevPrevChar:find("[,]") and prevChar:find("[+-]")) -- Don't split print(-3, -3)
       and not (prevPrevPrevChar:find("[=*^/]") and prevChar:find("[+-]")) -- Don't split sign in var = -3
-      and not (currChar == "-" and prevChar == "-") -- Don't split comment markers
+      and not (currChar == "-" and prevChar:find("[-*/^]")) -- Don't split comment markers
       and not (prevChar == "-" and currChar == "[") -- Don't put a space btw square bracket and comment marker
       and not (prevChar == ")" and currChar:find("[.:,%[+-*/=^]")) -- Don't split sth like ("This"):find("i")
       then
@@ -211,10 +248,6 @@ lastToken = ""
 lineNumber = 0
 nextIndent = 0
 positionList = {}
-indentedFile = assert(io.open("indented-file.lua", "wb"))
--- `indented-file` is an intermediate file that'll be later renamed to the filename passed.
--- The alternative way(overwriting) the file is not possible because the file will be in use
--- during the looping.
 
 ALIGN_BRACKETS = false
 BASIC_INDENTATION = true
@@ -239,10 +272,44 @@ for _, v in ipairs(arg) do
 end
 
 foundLogicalOperator = false --used to implement EXTRA_LEVEL
- -- The filename must be the first argument
-rawFile = assert(io.open(arg[1], "r"), string.format("Invalid filename: `%s'", arg[1]))
+-- The filename must be the first argument
+rawFile = assert(io.open(arg[1], "rb"), string.format("Invalid filename: `%s'", arg[1])) 
+
+CR = "\r"
+LF = "\n"
+CRLF = CR .. LF
+lineEnding = ""
+
+slurpedContents = rawFile:read("*all") -- Slurp file contents
+rawFile:close() 
+if slurpedContents:find(CRLF) then
+  lineEnding = CRLF
+elseif slurpedContents:find(CR) then
+  lineEnding = CR
+else
+  lineEnding = LF
+end
+
+indentedFile = assert(io.open("temp-file", "wb")) 
+-- `temp-file` is the intermediate file that will be renamed to the passed 
+-- filename and the original file deleted. The alternative(overwriting the file)
+-- causes unpleasant results, like a chopped file when an assertion fails because of the
+-- file writing process being interrupted.
+
+-- Split the string into lines
+codeLines = split(slurpedContents, lineEnding) 
+
+-- Restore the line endings without adding an extra line
+if codeLines[#codeLines] == "" then
+  codeLines[#codeLines] = nil
+  codeLines = mapConcatenate(codeLines, lineEnding) -- Restore the line endings
+else
+  codeLines = mapConcatenate(codeLines, lineEnding) 
+  codeLines[#codeLines] = (codeLines[#codeLines]):gsub(lineEnding, "") -- Restore the line endings
+end
+
 token = ""
-for line in rawFile:lines() do
+for _, line in ipairs(codeLines) do
   inLineComment = false
   lineNumber = lineNumber + 1
   trimmedLine = ""
@@ -258,19 +325,19 @@ for line in rawFile:lines() do
   startsWithString = inSingleQuotedString or inDoubleQuotedString or inLongString
   if not startsWithString and not line:find("^[ \t]*-%-") then
     -- strip leading whitespace only if this line is not in a string or starts with a comment
-    line = string.gsub(line, "^[\t ]*", "")
+    line = string.gsub(line, "^[\t ]*", "") 
   end
   for i = 1, string.len(line) do
-    currChar = line:charAt(i)
-    local nextChar = line:charAt(i + 1)
+    currChar = line:charAt(i) 
+    local nextChar = line:charAt(i + 1) 
     -- Since indexing starts from 1, getting the previous characater this
     -- way is safe.
-    local prevChar = line:charAt(i - 1)
+    local prevChar = line:charAt(i - 1) 
     local prevPrevChar = ""
     if i ~= 1 then
       -- This if condition is necessary in case the index is 1 which would
       -- give us the last character of the string.
-      prevPrevChar = line:charAt(i - 2)
+      prevPrevChar = line:charAt(i - 2) 
     end
     if escaped then
       escaped = false
@@ -281,7 +348,7 @@ for line in rawFile:lines() do
     if currChar == "\\" and not inLongString and not skipCurrentCharacter then
       escaped = true
     end
-
+    
     if (line:find("^[ \t]*-%-[^[]", i) or line:find("^#")) and not
       (inSingleQuotedString or inDoubleQuotedString or inLongString) then
       -- If it finds a line comment, it should preserve the comment and all the
@@ -289,7 +356,7 @@ for line in rawFile:lines() do
       inLineComment = true
       if line:find("^[ \t]*-%-") then
         if INDENT_COMMENTS then
-          line = line:gsub("^[ \t]*", "")
+          line = line:gsub("^[ \t]*", "") 
           currChar = "-" -- gsubbing the string above causes loss of one "-". this line restores it 
           startsWithString = false
         else
@@ -302,27 +369,27 @@ for line in rawFile:lines() do
       trimmedLine = trimmedLine .. currChar
       foundLogicalOperator = false
     else
-      foundLogicalOperator = line:find("[ )]and *$") or line:find("[ )]or *$") or line:find("= *$")
+      foundLogicalOperator = line:find("[ )]and *[\r\n]$") or line:find("[ )]or *[\r\n]$") or line:find("= *[\r\n]$") 
       if COMPACT then
         prevPrevPrevChar = ""
-        prevPrevPrevChar = trimmedLine:charAt(-3)
+        prevPrevPrevChar = trimmedLine:charAt(-3) 
         char1 = trimmedLine:charAt(-1) -- Previous character in the trimmed line
         char2 = trimmedLine:charAt(-2) -- Previous previous character in the trimmed line
-        trimmedLine = AppendChar(trimmedLine, char1, currChar, nextChar, char2, i, prevPrevPrevChar)
+        trimmedLine = AppendChar(trimmedLine, char1, currChar, nextChar, char2, i, prevPrevPrevChar) 
       else
         trimmedLine = trimmedLine .. currChar
       end
       ---------------------------------------------------------------
       if currChar:find("[({]") then
-        trimmedLength = string.len(trimmedLine)
+        trimmedLength = string.len(trimmedLine) 
         if ALIGN_BRACKETS then
-          table.insert(positionList, {currIndent + trimmedLength, trimmedLength, line = lineNumber})
+          table.insert(positionList, {currIndent + trimmedLength, trimmedLength, line = lineNumber}) 
         else
           nextIndent = nextIndent + INDENT_LEVEL
-          table.insert(positionList, {nextIndent, INDENT_LEVEL, line = lineNumber})
+          table.insert(positionList, {nextIndent, INDENT_LEVEL, line = lineNumber}) 
         end
       elseif currChar:find("[)}]") then
-        pos = table.remove(positionList)
+        pos = table.remove(positionList) 
         if #positionList > 0 then
           nextIndent = nextIndent - pos[2]
           if not ALIGN_BRACKETS then
@@ -355,7 +422,7 @@ for line in rawFile:lines() do
         substr = string.gsub(string.sub(line, i), "^[\t ]*", "") -- Slice to the end and strip leading whitespace
         _, nextSpace = string.find(substr, "[%(}) \t\n,{;\r-]") -- Find the first space. The asterisk caters for a no match case
         token = string.sub(substr, 1, nextSpace) -- Get the token / keyword / function name
-        token = string.gsub(token, "[%(}) \t\n,{;\r-]", "")
+        token = string.gsub(token, "[%(}) \t\n,{;\r-]", "") 
         --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         -- Indentation level is determined here.
         if IsIncreaser(token) and token ~= "" then
@@ -365,12 +432,12 @@ for line in rawFile:lines() do
             -- if a 'for' statement comes before a 'do', the 'do' keyword will be ignored.
             if BASIC_INDENTATION then
               nextIndent = nextIndent + INDENT_LEVEL
-              table.insert(positionList, {nextIndent, 0, line = lineNumber})
+              table.insert(positionList, {nextIndent, 0, line = lineNumber}) 
             else
               indent = currIndent + (string.len(trimmedLine) - 1) + INDENT_LEVEL
               -- the second value in the list is used to calculate the position of 'end' or
               -- 'until' so that it aligns with the head keyword.
-              table.insert(positionList, {indent, string.len(trimmedLine) - 1, line = lineNumber})
+              table.insert(positionList, {indent, string.len(trimmedLine) - 1, line = lineNumber}) 
             end
           end
         elseif token == "elseif" or token == "else" then
@@ -379,9 +446,12 @@ for line in rawFile:lines() do
             currIndent = currIndent - INDENT_LEVEL
           end
         elseif IsDecreaser(token) and token ~= "" then
-          pos = table.remove(positionList)
-          assert(pos, string.format("Excess 'end' statements: (%d, %d)", lineNumber, i))
+          pos = table.remove(positionList) 
+          assert(pos, string.format("Unmatched `%s' statement at (%d, %d)", token, lineNumber, i)) 
           if pos.line ~= lineNumber then
+            -- This test prevents an end statement from decreasing the current indentation level 
+            -- in the case of a one-line block. This wouldn't be necessary if we just matched the 
+            -- number of increasers minus the number of decreasers.
             currIndent = pos[1] - INDENT_LEVEL
           end
           nextIndent = nextIndent - pos[2] - INDENT_LEVEL
@@ -419,7 +489,7 @@ for line in rawFile:lines() do
         -- possible. It'll simply be ignored.
         -- NOTE: inLongString includes both long/multiline comments since they pretty much look
         -- the same the difference being the two dashes.
-        s, e = string.find(line, "^=*%[", i + 1)
+        s, e = string.find(line, "^=*%[", i + 1) 
         if s then
           equalSigns = e - s -- number of equal signs found
           inLongString = true
@@ -428,8 +498,8 @@ for line in rawFile:lines() do
         -- Possibly the end of a long string. Find the number of equal signs before this point
         -- and compare with the equal signs found earlier when the opening round bracket was
         -- found
-        substr = string.sub(line, 1, i)
-        s, e = string.find(substr, "%]=*%]$")
+        substr = string.sub(line, 1, i) 
+        s, e = string.find(substr, "%]=*%][\r\n]$") 
         if s then
           n = e - s - 1 -- number of equal signs found
         else
@@ -444,11 +514,13 @@ for line in rawFile:lines() do
       skipCurrentCharacter = false
     end
   end
-
-  if startsWithString or line:find("^[ \t]*$") then
+  
+  if startsWithString or line:find("^[ \t]*[\r\n]$") then
     -- Don't indent the line if it starts with a string
-    indentedFile:write(trimmedLine .. "\n")
-    print(trimmedLine)
+    indentedFile:write(trimmedLine) 
+    -- The gsub below is a hack for SciTE. CRLF characters tend to insert an extra 
+    -- line even with buffering switched off with io.stdout:setvbuf 'no'
+    io.write((trimmedLine:gsub("\r\n", "\n"))) 
   else
     if #positionList > 0 then
       nextIndent = positionList[#positionList][1]
@@ -457,22 +529,21 @@ for line in rawFile:lines() do
       -- increase the indentation by EXTRA_LEVEL spaces if the line ends with
       -- 'and', 'or' or '='
       indentedLine = string.rep(" ", currIndent + EXTRA_LEVEL) .. trimmedLine
-      print(indentedLine)
-      indentedFile:write(indentedLine .. "\n")
+      io.write((indentedLine:gsub("\r\n", "\n"))) 
+      indentedFile:write(indentedLine) 
     else
       -- Otherwise indent using the current indentation
       indentedLine = string.rep(" ", currIndent) .. trimmedLine
-      print(indentedLine)
-      indentedFile:write(indentedLine .. "\n")
+      io.write((indentedLine:gsub("\r\n", '\n'))) 
+      indentedFile:write(indentedLine) 
     end
   end
 end
 
-
-rawFile:close()
-indentedFile:close()
-assert(os.remove(arg[1]))
-assert(os.rename("indented-file.lua", arg[1]))
-assert(not (inLongString or inSingleQuotedString or inDoubleQuotedString),
-  "You have unclosed strings")
+indentedFile:close() 
+assert(os.remove(arg[1])) -- Deletes the original file
+assert(os.rename("temp-file", arg[1])) -- Give the indented file the passed filename.
+assert(not (inLongString or inSingleQuotedString or inDoubleQuotedString), 
+  "You have unterminated strings") 
+assert(#positionList == 0, "You have unfinished blocks")
 
