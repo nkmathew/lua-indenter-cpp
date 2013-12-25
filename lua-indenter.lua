@@ -1,4 +1,4 @@
-  
+
 --[===[  
 
 ## lua-indenter.lua
@@ -100,6 +100,16 @@ pushed to the list.
     - Preserves the file's line ending
     - Does not split the negative sign and the number in calculations.
 
++ 23rd December 2013
+    - All CR characters are replaced with LF before being printed to the console
+      so that all the content can be seen.
+
++ 25th December 2013
+    - Fix for failed detection of the end of a long comment/string caused by a
+      wrong regex pattern.
+    - Prevent a space from being added at the end of the line if the line ends
+      with an operator. It causes unnecessary generation of a diff file.
+
 ###What it doesn't do  
 
 + Indent with tabs.  
@@ -191,6 +201,8 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
     -- one. If the current character is a square bracket, don't add a
     -- space because it is part of a long string or comment
     if prevChar:find("[-/+*^,)%%]") 
+      and nextChar:find("[\r\n]") -- Don't add a space if at the end of the line
+      and nextChar ~= "" -- Don't add a space if at the end of a string
       and not (prevPrevChar:find("[(=/*]") and prevChar:find("[+-]")) -- Don't split sth like print(-3)
       and not (prevPrevPrevChar:find("[,]") and prevChar:find("[+-]")) -- Don't split print(-3, -3)
       and not (prevPrevPrevChar:find("[=*^/]") and prevChar:find("[+-]")) -- Don't split sign in var = -3
@@ -345,10 +357,11 @@ for _, line in ipairs(codeLines) do
       -- character. Another variable is used to achieve this.
       skipCurrentCharacter = true
     end
+
     if currChar == "\\" and not inLongString and not skipCurrentCharacter then
       escaped = true
     end
-    
+
     if (line:find("^[ \t]*-%-[^[]", i) or line:find("^#")) and not
       (inSingleQuotedString or inDoubleQuotedString or inLongString) then
       -- If it finds a line comment, it should preserve the comment and all the
@@ -364,6 +377,7 @@ for _, line in ipairs(codeLines) do
         end
       end
     end
+
     if inSingleQuotedString or inDoubleQuotedString or inLongString or inLineComment then
       -- Append the characters the way they come so that the string/comment does not change
       trimmedLine = trimmedLine .. currChar
@@ -420,7 +434,7 @@ for _, line in ipairs(codeLines) do
         -- Test the characters that keywords start with instead of
         -- assuming that there'll always be a space before a keyword.
         substr = string.gsub(string.sub(line, i), "^[\t ]*", "") -- Slice to the end and strip leading whitespace
-        _, nextSpace = string.find(substr, "[%(}) \t\n,{;\r-]") -- Find the first space. The asterisk caters for a no match case
+        _, nextSpace = string.find(substr, "[%(}) \t\n,{;\r-]")
         token = string.sub(substr, 1, nextSpace) -- Get the token / keyword / function name
         token = string.gsub(token, "[%(}) \t\n,{;\r-]", "") 
         --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -456,6 +470,7 @@ for _, line in ipairs(codeLines) do
           end
           nextIndent = nextIndent - pos[2] - INDENT_LEVEL
         else
+          -- If the token is not a keyword, don't change variable previousToken
           token = previousToken
         end
         --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -499,7 +514,7 @@ for _, line in ipairs(codeLines) do
         -- and compare with the equal signs found earlier when the opening round bracket was
         -- found
         substr = string.sub(line, 1, i) 
-        s, e = string.find(substr, "%]=*%][\r\n]$") 
+        s, e = string.find(substr, "%]=*%]")
         if s then
           n = e - s - 1 -- number of equal signs found
         else
@@ -514,13 +529,15 @@ for _, line in ipairs(codeLines) do
       skipCurrentCharacter = false
     end
   end
-  
+
   if startsWithString or line:find("^[ \t]*[\r\n]$") then
     -- Don't indent the line if it starts with a string
     indentedFile:write(trimmedLine) 
-    -- The gsub below is a hack for SciTE. CRLF characters tend to insert an extra 
-    -- line even with buffering switched off with io.stdout:setvbuf 'no'
-    io.write((trimmedLine:gsub("\r\n", "\n"))) 
+    -- The gsub below is a hack for SciTE and the console. CRLF characters tend
+    -- to insert an extra line even with buffering switched off with io.stdout:setvbuf 'no'
+    -- It also makes sure that files with CR line endings will have all their
+    -- content printed.
+    io.write((trimmedLine:gsub("\r\n?", '\n'))) 
   else
     if #positionList > 0 then
       nextIndent = positionList[#positionList][1]
@@ -529,12 +546,12 @@ for _, line in ipairs(codeLines) do
       -- increase the indentation by EXTRA_LEVEL spaces if the line ends with
       -- 'and', 'or' or '='
       indentedLine = string.rep(" ", currIndent + EXTRA_LEVEL) .. trimmedLine
-      io.write((indentedLine:gsub("\r\n", "\n"))) 
+      io.write((indentedLine:gsub("\r\n?", '\n'))) 
       indentedFile:write(indentedLine) 
     else
       -- Otherwise indent using the current indentation
       indentedLine = string.rep(" ", currIndent) .. trimmedLine
-      io.write((indentedLine:gsub("\r\n", '\n'))) 
+      io.write((indentedLine:gsub("\r\n?", '\n'))) 
       indentedFile:write(indentedLine) 
     end
   end
@@ -542,7 +559,7 @@ end
 
 indentedFile:close() 
 assert(os.remove(arg[1])) -- Deletes the original file
-assert(os.rename("temp-file", arg[1])) -- Give the indented file the passed filename.
+assert(os.rename("temp-file", arg[1]))
 assert(not (inLongString or inSingleQuotedString or inDoubleQuotedString), 
   "You have unterminated strings") 
 assert(#positionList == 0, "You have unfinished blocks")
