@@ -100,15 +100,15 @@ pushed to the list.
     - Preserves the file's line ending
     - Does not split the negative sign and the number in calculations.
 
-+ 23rd December 2013
-    - All CR characters are replaced with LF before being printed to the console
-      so that all the content can be seen.
++ 23rd December 2013  
+    - All CR characters are replaced with LF before being printed to the console  
+      so that all the content can be seen.  
 
-+ 25th December 2013
-    - Fix for failed detection of the end of a long comment/string caused by a
-      wrong regex pattern.
-    - Prevent a space from being added at the end of the line if the line ends
-      with an operator. It causes unnecessary generation of a diff file.
++ 25th December 2013  
+    - Fix for failed detection of the end of a long comment/string caused by a  
+      wrong regex pattern.  
+    - Prevent a space from being added at the end of the line if the line ends  
+      with an operator. It causes unnecessary generation of a diff file.  
 
 ###What it doesn't do  
 
@@ -201,8 +201,8 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
     -- one. If the current character is a square bracket, don't add a
     -- space because it is part of a long string or comment
     if prevChar:find("[-/+*^,)%%]") 
-      and nextChar:find("[\r\n]") -- Don't add a space if at the end of the line
-      and nextChar ~= "" -- Don't add a space if at the end of a string
+      and not nextChar:find("[\r\n]") -- Don't add a space if at the end of the line
+      and not nextChar ~= "" -- Don't add a space if at the end of a string
       and not (prevPrevChar:find("[(=/*]") and prevChar:find("[+-]")) -- Don't split sth like print(-3)
       and not (prevPrevPrevChar:find("[,]") and prevChar:find("[+-]")) -- Don't split print(-3, -3)
       and not (prevPrevPrevChar:find("[=*^/]") and prevChar:find("[+-]")) -- Don't split sign in var = -3
@@ -430,7 +430,7 @@ for _, line in ipairs(codeLines) do
       end
       ---------------------------------------------------------------
       previousToken = token
-      if (prevChar:find("[ \t>%<=+-*/^({,]") or prevChar == "") and currChar:find("[eiuwfdr]") then
+      if (prevChar:find("[ \t>%<=+-*/^(){,]") or prevChar == "") and currChar:find("[eiuwfdr]") then
         -- Test the characters that keywords start with instead of
         -- assuming that there'll always be a space before a keyword.
         substr = string.gsub(string.sub(line, i), "^[\t ]*", "") -- Slice to the end and strip leading whitespace
