@@ -1,9 +1,9 @@
 /**
 
-@Started: 22nd December 23:30
-@Date: 30th December
-@Home: https://gist.github.com/nkmathew/
-@Cloning:
+@Started: 22:30 22nd December 2013
+@Date: 30th December 2013
+@Home: https://gist.github.com/nkmathew/8181368 
+@Cloning: https://gist.github.com/8181368.git
 @Author: nkmathew <kipkoechmathew@gmail.com>
 
 This program is the same as the one [here](https://gist.github.com/nkmathew/7969358).
