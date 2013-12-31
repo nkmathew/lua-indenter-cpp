@@ -470,7 +470,7 @@ for _, line in ipairs(codeLines) do
           table.insert(positionList, {nextIndent, INDENT_LEVEL, line = lineNumber})
         end
       elseif currChar:find("[)}]") then
-        assert(pos, string.format("Unmatched bracket `%s' statement at (%d, %d)", currChar, lineNumber, i))
+        assert(#positionList > 0, string.format("Unmatched bracket `%s' statement at (%d, %d)", currChar, lineNumber, i))
         pos = table.remove(positionList)
         local substr = string.sub(line, 1, i + 1)
         if #positionList > 0 then
