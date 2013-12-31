@@ -375,7 +375,28 @@ lua-indenter.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--
                           It's default status is false. Using this option will give  \n\
                           you an indentation like the hypotenuse function mentioned earlier.  \n\
 \n\
---no-output, -no      ## Suppress outputting of the indented code.  \
+--no-output, -no      ## Suppress outputting of the indented code.  \n\
+\n\
+\n\
+--no-extra-level, -ne ## Don't add EXTRA_LEVEL spaces to the indent level if  \n\
+                         the line ends with 'and', 'or' or '='. It can make  \n\
+                         some lines like these ones below clearer:  \n\
+\n\
+                              return token == \"end\" or\n\
+                                     token == \"until\"\n\
+                        and at the same time more confusing when the placement  \n\
+                        of the logical operators is not consistent. \n\
+\n\
+                              retval = first_val or\n\
+                                       second_val\n\
+                              or third_val\n\
+\n\
+                        The indentation will improve if the 'or' is placed at  \n\
+                        the end of the second line:\n\
+\n\
+                              retval = first_val or\n\
+                                     second_val or\n\
+                                     third_val\n\
 \n\n";
 
 
