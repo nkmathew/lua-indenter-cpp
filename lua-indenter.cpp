@@ -2,7 +2,7 @@
 
 @Started: 22:30 22nd December 2013
 @Date: 30th December 2013
-@Home: https://gist.github.com/nkmathew/8181368 
+@Home: https://gist.github.com/nkmathew/8181368
 @Cloning: https://gist.github.com/8181368.git
 @Author: nkmathew <kipkoechmathew@gmail.com>
 
@@ -91,7 +91,7 @@ bool ends_with(const std::string *str, std::string substr) {
 }
 
 std::string remove_chars(std::string str, std::string replacements) {
-  // Deletes the specified characters from the string. Used to remove 
+  // Deletes the specified characters from the string. Used to remove
   // any characters attached to keywords, like commas, brackets etc
   std::string result = "";
   for (int i = 0; i < str.length(); i++) {
@@ -175,9 +175,9 @@ std::vector<StringRef> split(std::string *str, const std::string sep,
                              bool preserve) {
   // Walk the whole string storing the start and end positions of the
   // substrings in a vector to be used later. I borrowed StringRef from
-  // a good answer in SO. My original implementation was very inefficient 
+  // a good answer in SO. My original implementation was very inefficient
   // with 200KB+ files. It involved copying the substrings to the vector and
-  // returning it. It was so slow that it would take 5 more seconds to split 
+  // returning it. It was so slow that it would take 5 more seconds to split
   // a 700KB file than the Lua version.
   const int vector_size = substring_count(str, &sep) + 1;
   const int sep_length = sep.length();
@@ -199,7 +199,7 @@ std::vector<StringRef> split(std::string *str, const std::string sep,
       break;
     } else {
       if (preserve) {
-        // Include the separator in the sliced string hence preserving it. Saves 
+        // Include the separator in the sliced string hence preserving it. Saves
         // you the trouble of mapping the line ending back like I did in the Lua
         // version
         StringRef string_ptr_pos(it + prev_pos, it + (next_pos + sep_length));
@@ -470,7 +470,7 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
 
     curr_indent = next_indent;
     std::string trimmed_line; // The line to be appended character by character
-    
+
     // Get the iterator.
     StringRef curr_line = code_lines[line_number];
 
@@ -546,17 +546,23 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
           int trimmed_length = trimmed_line.length();
           if (ALIGN_BRACKETS) {
             TokenCoord curr_pos = {line_number, offset, curr_indent +
-                                    trimmed_length, trimmed_length, curr_char
-                                   };
+                                   trimmed_length, trimmed_length, curr_char
+                                  };
             token_locations.push_back(curr_pos); // Add to the vector
           } else {
             next_indent += INDENT_LEVEL;
             TokenCoord curr_pos = {line_number, offset, next_indent,
-                                    INDENT_LEVEL, curr_char
-                                   };
+                                   INDENT_LEVEL, curr_char
+                                  };
             token_locations.push_back(curr_pos); // Add to the vector
           }
         } else if (equals_any(curr_char, ")}")) {
+          if (token_locations.empty()) {
+            // An unmatched bracket found, issue warning and exit.
+            std::fprintf(stderr, "Unmatched `%s' statement at (%d, %d). Exiting. . .\n",
+                         curr_char.c_str(), line_number + 1, offset);
+            std::exit(1);
+          }
           prev_pos = token_locations.back();
           token_locations.pop_back(); // remove from vector. Doesn't really shrink the vector.
           if (!token_locations.empty()) {
@@ -608,9 +614,9 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
                 int indent = curr_indent + (trimmed_line.length() - 1) +
                              INDENT_LEVEL;
                 TokenCoord curr_pos = {line_number, offset, indent,
-                                        (static_cast<int>(trimmed_line.length()) - 1),
-                                        token
-                                       };
+                                       (static_cast<int>(trimmed_line.length()) - 1),
+                                       token
+                                      };
                 token_locations.push_back(curr_pos); // Add the struct to the end of the vector.
               }
             }
@@ -655,8 +661,8 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
         }
       }
       // ___________________Handle quoted strings____________________________________
-      // NOTE: strings are handled at the end of the loop so that spacing operators 
-      // can happen when e.g. a quote comes after an equal sign. 
+      // NOTE: strings are handled at the end of the loop so that spacing operators
+      // can happen when e.g. a quote comes after an equal sign.
       if (!in_line_comment) {
         if (curr_char == "'" && !(in_double_quoted_string || in_long_string)) {
           //std::printf("-- Found single quoted string at LINE: %d", line_number);
