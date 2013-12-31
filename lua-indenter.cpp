@@ -415,7 +415,7 @@ int main(int argc, char *argv[]) {
     }
     std::string contents = slurp_file_contents(fname.c_str());
     std::fstream temp_file("temp-file.lua", std::ios::out | std::ios::binary);
-    //std::fprintf(stderr, "-- Indenting `%s. . .\n", fname.c_str());
+    //std::fprintf(stderr, "-- Indenting `%s'. . .\n", fname.c_str());
     indent_code(&contents, &temp_file);
     temp_file.close();
 
