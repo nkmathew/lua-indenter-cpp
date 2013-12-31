@@ -428,7 +428,7 @@ for _, line in ipairs(codeLines) do
     end
 
     if (line:find("^[ \t]*-%-", i) and not line:find("^[ \t]*-%-%[=*%[", i)
-      or line:find("^#")) and not
+        or line:find("^#")) and not
       (inSingleQuotedString or inDoubleQuotedString or inLongString) then
       -- If it finds a line comment, it should preserve the comment and all the
       -- space before it.
@@ -470,6 +470,7 @@ for _, line in ipairs(codeLines) do
           table.insert(positionList, {nextIndent, INDENT_LEVEL, line = lineNumber})
         end
       elseif currChar:find("[)}]") then
+        assert(pos, string.format("Unmatched bracket `%s' statement at (%d, %d)", currChar, lineNumber, i))
         pos = table.remove(positionList)
         local substr = string.sub(line, 1, i + 1)
         if #positionList > 0 then
@@ -651,7 +652,10 @@ end
 indentedFile:close()
 assert(os.remove(arg[1])) -- Deletes the original file
 assert(os.rename("temp-file", arg[1]))
-assert(not (inLongString or inSingleQuotedString or inDoubleQuotedString),
-  "You have unterminated strings")
+
+assert(not inLongString, "You have unterminated long strings/comments")
+assert(not inSingleQuotedString, "You have an unterminated single quoted string")
+assert(not inDoubleQuotedString, "You have an unterminated double quoted string")
+
 assert(#positionList == 0, "You have unfinished blocks")
 
