@@ -469,7 +469,8 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
   int n_lines = code_lines.size(),
       next_indent = 0,
       curr_indent = 0,
-      equal_signs = -999;
+      equal_signs = -999,
+      bracket_count = 0;
 
   bool escaped = false,
        in_long_string = false,
@@ -497,9 +498,10 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
 
     // Create a string from the iterator in the vector
     std::string line = std::string(curr_line.start_pos, curr_line.end_pos);
-
+    int spaces_removed = line.length();
     if (!starts_with_string && !(is_line_comment(&line, 0) && !INDENT_COMMENTS)) {
       line = strip_leading_whitespace(&line);
+      spaces_removed -= line.length();
     }
 
     int line_length = line.length();
@@ -542,6 +544,7 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
       if (in_single_quoted_string || in_double_quoted_string || in_long_string
           || in_line_comment) {
         trimmed_line += curr_char;
+        found_logical_operator = false;
       } else {
         if (COMPACT) {
           std::string prev_prev_prev_char = "";
@@ -564,6 +567,7 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
 
         // ______________________________handle bracket indentation______________________________
         if (equals_any(curr_char, "({")) {
+          bracket_count++;
           int trimmed_length = trimmed_line.length();
           if (ALIGN_BRACKETS) {
             TokenCoord curr_pos = {line_number, offset, curr_indent +
@@ -578,13 +582,26 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
             token_locations.push_back(curr_pos); // Add to the vector
           }
         } else if (equals_any(curr_char, ")}")) {
-          if (token_locations.empty()) {
+          if (!(!token_locations.empty() and (bracket_count > 0))) {
             // An unmatched bracket found, issue warning and exit.
-            std::fprintf(stderr, "Unmatched `%s' statement at (%d, %d). Exiting. . .\n",
-                         curr_char.c_str(), line_number + 1, offset);
+            std::fprintf(stderr, "Excess bracket `%s' around (%d, %d). Exiting. . .\n",
+                         curr_char.c_str(), line_number + 1, spaces_removed + offset + 1);
             std::exit(1);
           }
+          bracket_count--;
           prev_pos = token_locations.back();
+          std::string correct_closer = "";
+          if (prev_pos.token == "(") {
+            correct_closer = ")";
+          } else if (prev_pos.token == "{") {
+            correct_closer = "}";
+          }
+          if (curr_char != correct_closer) {
+            std::fprintf(stderr, "Bracket `%s' at (%d, %d) does not match `%s' at (%d, %d)\n",
+                         prev_pos.token.c_str(), prev_pos.line + 1, prev_pos.offset + 1,
+                         curr_char.c_str(), line_number + 1, offset + 1);
+            std::exit(1);
+          }
           token_locations.pop_back(); // remove from vector. Doesn't really shrink the vector.
           if (!token_locations.empty()) {
             if (!ALIGN_BRACKETS) {
