@@ -147,6 +147,9 @@ pushed to the list.
                 print(vcs)
               end
 
++ 2nd January 2014
+    - Issues warning when excess and unmatched brackets are encountered.  
+ 
 
 ###Shortcomings  
 
@@ -279,9 +282,9 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
   --__________________________________________________________________________________________
   if not (prevChar:find("[ \t]") and currChar:find("[ \t]")) and
            not (prevChar == "" and currChar:find("[\t ]")) -- Make sure the first space is removed
-           and not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
-           and not (nextChar:find("[})%],]") and currChar:find("[\t ]")) -- don't copy space before closing bracket
-           then
+    and not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
+    and not (nextChar:find("[})%],]") and currChar:find("[\t ]")) -- don't copy space before closing bracket
+    then
     -- Trimming happens here. We only copy the character if the previous
     -- character is not a space or a tab or a zero length string that way it
     -- strips all whitespace before the string. The last part of the test
@@ -385,6 +388,7 @@ token = ""
 -- different line from that of the 'for' or 'while' keyword.
 forKeyword = false
 whileKeyword = false
+bracketCount = 0
 for _, line in ipairs(codeLines) do
   inLineComment = false
   lineNumber = lineNumber + 1
@@ -399,10 +403,12 @@ for _, line in ipairs(codeLines) do
   -- of moving the indentation part from the end to here and re-adjusting the
   -- variables.
   startsWithString = inSingleQuotedString or inDoubleQuotedString or inLongString
+  spacesRemoved = line:len()
   if not startsWithString and not (line:find("^[ \t]*-%-") and not INDENT_COMMENTS) then
     -- strip leading whitespace only if this line is not in a string or starts
     -- with a comment
     line = string.gsub(line, "^[\t ]*", "")
+    spacesRemoved = spacesRemoved - line:len()
   end
   for i = 1, string.len(line) do
     currChar = line:charAt(i)
@@ -461,17 +467,30 @@ for _, line in ipairs(codeLines) do
       end
       --______________________________________________________________________________________________
       if currChar:find("[({]") then
+        bracketCount = bracketCount + 1
         trimmedLength = string.len(trimmedLine)
         if ALIGN_BRACKETS then
           table.insert(positionList, {currIndent + trimmedLength,
-              trimmedLength, line = lineNumber})
+              trimmedLength, line = lineNumber, token = currChar, offset = i})
         else
           nextIndent = nextIndent + INDENT_LEVEL
-          table.insert(positionList, {nextIndent, INDENT_LEVEL, line = lineNumber})
+          table.insert(positionList, {nextIndent, INDENT_LEVEL, line = lineNumber,
+              token = currChar, offset = i})
         end
       elseif currChar:find("[)}]") then
-        assert(#positionList > 0, string.format("Unmatched bracket `%s' statement at (%d, %d)", currChar, lineNumber, i))
+        assert(((#positionList > 0) and (bracketCount > 0)),
+          string.format("Excess bracket `%s' around (%d, %d)",
+            currChar, lineNumber, spacesRemoved + i))
+        bracketCount = bracketCount - 1
         pos = table.remove(positionList)
+        if pos.token == "(" then
+          correctCloser = ")"
+        elseif pos.token == "{" then
+          correctCloser = "}"
+        end
+        assert(currChar == correctCloser,
+          string.format("Bracket `%s' at (%d, %d) does not match `%s' at (%d, %d)",
+            pos.token, pos.line, pos.offset, currChar, lineNumber, spacesRemoved + i))
         local substr = string.sub(line, 1, i + 1)
         if #positionList > 0 then
           if not ALIGN_BRACKETS then
@@ -522,12 +541,13 @@ for _, line in ipairs(codeLines) do
             -- will be ignored.
             if BASIC_INDENTATION then
               nextIndent = nextIndent + INDENT_LEVEL
-              table.insert(positionList, {nextIndent, 0, line = lineNumber})
+              table.insert(positionList, {nextIndent, 0, line = lineNumber, token = token, offset = i})
             else
               indent = currIndent + (string.len(trimmedLine) - 1) + INDENT_LEVEL
               -- the second value in the list is used to calculate the position
               -- of 'end' or 'until' so that it aligns with the head keyword.
-              table.insert(positionList, {indent, string.len(trimmedLine) - 1, line = lineNumber})
+              table.insert(positionList, {indent, string.len(trimmedLine) - 1, line = lineNumber,
+                  token = token, offset = i})
             end
           end
           if token == "do" and forKeyword then
