@@ -443,7 +443,7 @@ int main(int argc, char *argv[]) {
     std::remove(fname.c_str());
     std::rename("temp-file.lua", fname.c_str());
   } else {
-    std::cout << usage;
+    std::cout << usage << std::endl;
   }
   return 0;
 }
@@ -783,7 +783,7 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
     // ____________________________Indent the line/Write to file__________________________
     if (starts_with_string || equals_any(trimmed_line.substr(0, 1), "\r\n")) {
       if (OUTPUT) {
-        std::cout << remove_chars(trimmed_line, "\r\n") + "\n";
+        std::cout << remove_chars(trimmed_line, "\r\n") << std::endl;
       }
       write_string(indented_file, &trimmed_line);
     } else {
@@ -796,14 +796,14 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
         std::string indented_line(curr_indent + EXTRA_LEVEL, ' ');
         indented_line += trimmed_line;
         if (OUTPUT) {
-          std::cout << remove_chars(indented_line, "\r\n") + "\n";
+          std::cout << remove_chars(indented_line, "\r\n") << std::endl;
         }
         write_string(indented_file, &indented_line);
       } else {
         std::string indented_line(curr_indent, ' ');
         indented_line += trimmed_line;
         if (OUTPUT) {
-          std::cout << remove_chars(indented_line, "\r\n") + "\n";
+          std::cout << remove_chars(indented_line, "\r\n") << std::endl;
         }
         write_string(indented_file, &indented_line);
       }
