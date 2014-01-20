@@ -136,7 +136,7 @@ pushed to the list.
 
 + 30th December 2013  
     - Can now handle for/while constructs that have the 'do' keyword in a different line.  
-      Like when you use an 'literal' iterator in the 'for' header.
+      Like when you use a 'literal' iterator in the 'for' header.
       
               -- a contrived example(from the PiL book)
               lst = {"GitHub", "BitBucket", "Git", "Subversion"}  
@@ -149,6 +149,10 @@ pushed to the list.
 
 + 2nd January 2014
     - Issues warning when excess or unmatched brackets are encountered.  
+
++ 20th January 2014
+    - Fix for wrong detection of shebangs when a hash(#) is encountered at the  
+      start of the line without the accompanying exclamation(!).  
  
 
 ###Shortcomings  
@@ -622,7 +626,7 @@ for _, line in ipairs(codeLines) do
       elseif currChar == "]" and inLongString then
         -- Possibly the end of a long string. Find the number of equal signs
         -- before this point and compare with the equal signs found earlier when
-        -- the opening round bracket was found
+        -- the opening square bracket was found
         substr = string.sub(line, 1, i)
         s, e = string.find(substr, "%]=*%]")
         if s then
@@ -642,7 +646,9 @@ for _, line in ipairs(codeLines) do
   end
 
   if startsWithString or line:find("^[ \t]*[\r\n]") then
-    -- Don't indent the line if it starts with a string
+    -- Don't indent the line if it starts with a string or has nothing else but
+    -- whitespace(in this case it'll be an empty string due to the stripping
+    -- that happens before we enter the loop)
     indentedFile:write(trimmedLine)
     -- The gsub below is a hack for SciTE and the console. CRLF characters tend
     -- to insert an extra line even with buffering switched off with
