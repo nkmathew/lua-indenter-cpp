@@ -1,5 +1,5 @@
 #!/usr/bin/lua5.2
---[===[  
+help = [===[  
 
 ## lua-indenter.lua
 **Started:** December 07, 2013, 08:37:25  
@@ -148,7 +148,7 @@ pushed to the list.
               end
 
 + 2nd January 2014
-    - Issues warning when excess and unmatched brackets are encountered.  
+    - Issues warning when excess or unmatched brackets are encountered.  
  
 
 ###Shortcomings  
@@ -213,14 +213,14 @@ function mapConcatenate(tbl, char)
 end
 
 
---______________________________________________________________________________________
+--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Takes a string, an index and the characters adjacent to the character at that
 -- index and decides whether the character should be appended to the passed
 -- string or not.
 -- currChar and nextChar refer to the original string
 -- prevChar, prevPrevChar and prevPrevPrevChar refer to the trimmed string.
 -- This function is called for every iteration of the string.
---______________________________________________________________________________________
+--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrevPrevChar)
   local trimmedLine = str
   -- This functions contains hacks that enable the program to space operators
@@ -279,7 +279,7 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       trimmedLine = trimmedLine .. " "
     end
   end
-  --__________________________________________________________________________________________
+  --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if not (prevChar:find("[ \t]") and currChar:find("[ \t]")) and
            not (prevChar == "" and currChar:find("[\t ]")) -- Make sure the first space is removed
     and not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
@@ -346,6 +346,11 @@ end
 
 foundLogicalOperator = false --used to implement EXTRA_LEVEL
 -- The filename must be the first argument
+if #arg == 0 then
+  -- No commandline arguments passed. Print usage instructions and exit
+  print(help)
+  os.exit(0)
+end
 rawFile = assert(io.open(arg[1], "rb"), string.format("Invalid filename: `%s'", arg[1]))
 
 CR = "\r"
@@ -404,7 +409,8 @@ for _, line in ipairs(codeLines) do
   -- variables.
   startsWithString = inSingleQuotedString or inDoubleQuotedString or inLongString
   spacesRemoved = line:len()
-  if not startsWithString and not (line:find("^[ \t]*-%-") and not INDENT_COMMENTS) then
+  if not startsWithString and not ((not line:find("^[ \t]*-%-%[=*%[") and
+               line:find("^[ \t]-%-")) and not INDENT_COMMENTS) then
     -- strip leading whitespace only if this line is not in a string or starts
     -- with a comment
     line = string.gsub(line, "^[\t ]*", "")
@@ -434,10 +440,11 @@ for _, line in ipairs(codeLines) do
     end
 
     if (line:find("^[ \t]*-%-", i) and not line:find("^[ \t]*-%-%[=*%[", i)
-        or line:find("^#")) and not
+        or line:find("^#!")) and not
       (inSingleQuotedString or inDoubleQuotedString or inLongString) then
       -- If it finds a line comment, it should preserve the comment and all the
-      -- space before it.
+      -- space before it. It also detects a shebang so that the forward slashes
+      -- won't become spaced
       inLineComment = true
       if line:find("^[ \t]*-%-") then
         if INDENT_COMMENTS then
@@ -465,7 +472,7 @@ for _, line in ipairs(codeLines) do
       else
         trimmedLine = trimmedLine .. currChar
       end
-      --______________________________________________________________________________________________
+      --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if currChar:find("[({]") then
         bracketCount = bracketCount + 1
         trimmedLength = string.len(trimmedLine)
@@ -518,14 +525,14 @@ for _, line in ipairs(codeLines) do
         end
       end
       if (prevChar:find("[ \t>%<=+-*/^(){,\"';]") or prevChar == "") and currChar:find("[eiuwfdr]") then
-        --_________________________________Extract token/keyword________________________________________
+        --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Extract token/keyword ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         -- Test the characters that keywords start with instead of
         -- assuming that there'll always be a space before a keyword.
         substr = string.gsub(string.sub(line, i), "^[\t ]*", "") -- Slice to the end and strip leading whitespace
         _, nextSpace = string.find(substr, "[%(}) \t\n,\"'{;\r-]")
         token = string.sub(substr, 1, nextSpace) -- Get the token/keyword/function name
         token = string.gsub(token, "[%(}) \t\n'\",{;\r-]", "")
-        --______________________________Calculate the next line's indentation level__________________
+        --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Calculate the next line's indentation level ]~~~~~~~~~~~~~~~~~~
         -- Indentation level is determined here.
         if IsIncreaser(token) and token ~= "" then
           if token == "for" then
@@ -577,13 +584,13 @@ for _, line in ipairs(codeLines) do
             nextIndent = nextIndent - INDENT_LEVEL
           end
         end
-        --_________________________________________________________________________________________
+        --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       end
     end
     if not skipCurrentCharacter and not inLineComment then
       -- The string detecting part has to be last in the block so that
       -- space can be added between equal signs and string quotes.
-      --___________________________________________________________________________________________
+      --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if currChar:find("'") and not inDoubleQuotedString and not inLongString then
         -- Found the start of a single quoted string
         if inSingleQuotedString then
@@ -592,7 +599,7 @@ for _, line in ipairs(codeLines) do
           inSingleQuotedString = true
         end
       end
-      --___________________________________________________________________________________________
+      --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if currChar:find('"') and not (inSingleQuotedString or inLongString) then
         -- Found the start of a double quoted string.
         if inDoubleQuotedString then
@@ -601,7 +608,7 @@ for _, line in ipairs(codeLines) do
           inDoubleQuotedString = true
         end
       end
-      --___________________________long string detection____________________________________________
+      --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if currChar == "[" and not (inLongString or inSingleQuotedString or inDoubleQuotedString) then
         -- We include inLongString in the condition because nesting of long
         -- strings is not possible. It'll simply be ignored.
@@ -628,7 +635,7 @@ for _, line in ipairs(codeLines) do
           inLongString = false
         end
       end
-      --___________________________________________________________________________________________
+      --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     elseif skipCurrentCharacter then
       skipCurrentCharacter = false
     end
