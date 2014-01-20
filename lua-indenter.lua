@@ -149,6 +149,10 @@ pushed to the list.
 
 + 2nd January 2014
     - Issues warning when excess or unmatched brackets are encountered.  
+
++ 20th January 2014
+    - Fix for wrong detection of shebangs when a hash(#) is encountered at the  
+      start of the line without the accompanying exclamation(!).  
  
 
 ###Shortcomings  
