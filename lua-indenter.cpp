@@ -50,15 +50,15 @@ struct StringRef {
   std::string::const_iterator end_pos;
 };
 
-bool ALIGN_BRACKETS = false,
+bool ALIGN_BRACKETS    = false,
      BASIC_INDENTATION = true,
-     COMPACT = true,
-     INDENT_COMMENTS = false,
-     OUTPUT = true,
-     NO_EXTRA_LEVEL = false;
+     COMPACT           = true,
+     INDENT_COMMENTS   = false,
+     OUTPUT            = true,
+     NO_EXTRA_LEVEL    = false;
 
 int INDENT_LEVEL = 2,
-    EXTRA_LEVEL = 7;
+    EXTRA_LEVEL  = 7;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Function Prototypes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -81,7 +81,7 @@ void write_string(std::fstream *, std::string *);
 
 bool ends_with(const std::string *str, std::string substr) {
   // Checks if a string ends with another string.
-  int str_len = str->length();
+  int str_len    = str->length();
   int substr_len = substr.length();
   if (str_len < substr_len) {
     return false;
@@ -228,11 +228,13 @@ std::string append_char(std::string prev_char, std::string
                         curr_char, std::string next_char,
                         std::string prev_prev_char, int i,
                         std::string prev_prev_prev_char) {
-  std::string str = "";
+  std::string str   = "";
+  std::string digit = "0123456789";
   if ((!equals_any(prev_char, "\t ")  // No need to add a space if there's already one
        && i != 0 // Don't add a space if the operator is the first character
        && !equals_any(curr_char, "])[:\r\n"))) { // Don't add space if at the end of the line
     if (equals_any(curr_char, "%^><-/~+*")
+        && !(equals_any(curr_char, "+-") && equals_any(prev_char, "eE") && equals_any(prev_prev_char, digit))
         && !(equals_any(prev_char, "({%[=,"))) { // Don't add space after opening bracket
       // Add a space before operators(+, -, *, /) and the operands
       if (!(curr_char == "-" && prev_char == "-")) {
@@ -255,13 +257,14 @@ std::string append_char(std::string prev_char, std::string
     // space because it is part of a long string or comment
     if (equals_any(prev_char, "-+/*^,)%")
         && !(equals_any(prev_prev_char, "(=/*")
-             && equals_any(prev_char, "-+")) // Don't split sth like print(-3)
+             && equals_any(prev_char, "-+")) // Don't split sth like `print(-3)`
         && !(equals_any(prev_prev_prev_char, ",")
-             && equals_any(prev_char, "-+")) // Don't split print(-3, -3)
+             && equals_any(prev_char, "-+")) // Don't split `print(-3, -3)`
         && !(equals_any(prev_prev_prev_char, "=*^/")
-             && equals_any(prev_char, "-+")) // Don't split sign in var = -3
+             && equals_any(prev_char, "-+")) // Don't split sign in `var = -3`
         && !(curr_char == "-" && equals_any(prev_char, "-+*/^")) // Don't split comment markers
         && !(prev_char == "-" && curr_char == "[") // Don't put a space btw square bracket and long comment marker
+        && !(equals_any(prev_char, "+-") && equals_any(prev_prev_char, "eE") && equals_any(prev_prev_prev_char, digit))
         && !(prev_char == ")" && equals_any(curr_char, ":,[+-*/=^")) // Don't split sth like ("This"):find("i")
         && !(prev_char == ")" && curr_char == "." && next_char != ".")) { // split sth like (func()).."\n"
       // Add a space after operators(+, -, *, /) and the operands
@@ -351,53 +354,52 @@ void write_string(std::fstream *out_file, std::string *str) {
 }
 
 // Help message. Avoiding multiline strings so that it can compile with c99
-std::string usage = "\
-lua-indenter.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-brackets]]  \n\
-  \n\
---indent-comments, -ic  ## Causes line comments(not long comments) to be indented like every other line.  \n\
-                           It's false by default in order to preseve any deliberate comment layout.  \n\
-\n\
---no-compact, -nc       ## Instructs the program to indent without messing with the  \n\
-                           program layout like aligned equal signs or aligned tables(like the `network`  \n\
-                           table below)  \n\
-  \n\
---align-brackets, -ab   ## Aligns brackets like this:  \n\
-                            network = {{name = \"grauna\",  IP = \"210.26.30.34\"},  \n\
-                                       {name = \"arraial\", IP = \"210.26.30.23\"},  \n\
-                                       {name = \"lua\",     IP = \"210.26.23.12\"},  \n\
-                                       {name = \"derain\",  IP = \"210.26.23.20\"},  \n\
-                                       }  \n\
-                            when ALIGN_BRACKETS is false, brackets will cause an  \n\
-                            increase in the indentation level by INDENT_LEVEL spaces.  \n\
-  \n\
---no-basic, -nb        ## Strives to align the head keyword with the terminating  \n\
-                            keyword no matter where it is in the line  \n\
-                          It's default status is false. Using this option will give  \n\
-                          you an indentation like the hypotenuse function mentioned earlier.  \n\
-\n\
---no-output, -no      ## Suppress outputting of the indented code.  \n\
-\n\
-\n\
---no-extra-level, -ne ## Don't add EXTRA_LEVEL spaces to the indent level if  \n\
-                         the line ends with 'and', 'or' or '='. It can make  \n\
-                         some lines like these ones below clearer:  \n\
-\n\
-                              return token == \"end\" or\n\
-                                     token == \"until\"\n\
-                        and at the same time more confusing when the placement  \n\
-                        of the logical operators is not consistent. \n\
-\n\
-                              retval = first_val or\n\
-                                       second_val\n\
-                              or third_val\n\
-\n\
-                        The indentation will improve if the 'or' is placed at  \n\
-                        the end of the second line:\n\
-\n\
-                              retval = first_val or\n\
-                                     second_val or\n\
-                                     third_val\n\
-\n\n";
+std::string usage = 
+"lua-indenter.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-brackets]]  \n"
+"  \n"
+"--indent-comments, -ic  ## Causes line comments(not long comments) to be indented like every other line.  \n"
+"                           It's false by default in order to preseve any deliberate comment layout.  \n"
+"\n"
+"--no-compact, -nc       ## Instructs the program to indent without messing with the  \n"
+"                           program layout like aligned equal signs or aligned tables(like the `network`  \n"
+"                           table below)  \n"
+"  \n"
+"--align-brackets, -ab   ## Aligns brackets like this:  \n"
+"                            network = {{name = \"grauna\",  IP = \"210.26.30.34\"},  \n"
+"                                       {name = \"arraial\", IP = \"210.26.30.23\"},  \n"
+"                                       {name = \"lua\",     IP = \"210.26.23.12\"},  \n"
+"                                       {name = \"derain\",  IP = \"210.26.23.20\"},  \n"
+"                                       }  \n"
+"                            when ALIGN_BRACKETS is false, brackets will cause an  \n"
+"                            increase in the indentation level by INDENT_LEVEL spaces.  \n"
+"  \n"
+"--no-basic, -nb        ## Strives to align the head keyword with the terminating  \n"
+"                            keyword no matter where it is in the line  \n"
+"                          It's default status is false. Using this option will give  \n"
+"                          you an indentation like the hypotenuse function mentioned earlier.  \n"
+"\n"
+"--no-output, -no      ## Suppress outputting of the indented code.  \n"
+"\n"
+"\n"
+"--no-extra-level, -ne ## Don't add EXTRA_LEVEL spaces to the indent level if  \n"
+"                         the line ends with 'and', 'or' or '='. It can make  \n"
+"                         some lines like these ones below clearer:  \n"
+"\n"
+"                              return token == \"end\" or\n"
+"                                     token == \"until\"\n"
+"                        and at the same time more confusing when the placement  \n"
+"                        of the logical operators is not consistent. \n"
+"\n"
+"                              retval = first_val or\n"
+"                                       second_val\n"
+"                              or third_val\n"
+"\n"
+"                        The indentation will improve if the 'or' is placed at  \n"
+"                        the end of the second line:\n"
+"\n"
+"                              retval = first_val or\n"
+"                                     second_val or\n"
+"                                     third_val\n\n\n";
 
 
 int main(int argc, char *argv[]) {
@@ -466,27 +468,27 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
 
   // state variables:
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  int n_lines = code_lines.size(),
-      next_indent = 0,
-      curr_indent = 0,
-      equal_signs = -999,
+  int n_lines       = code_lines.size(),
+      next_indent   = 0,
+      curr_indent   = 0,
+      equal_signs   = -999,
       bracket_count = 0;
 
-  bool escaped = false,
-       in_long_string = false,
+  bool escaped                 = false,
+       in_long_string          = false,
        in_single_quoted_string = false,
        in_double_quoted_string = false,
-       found_logical_operator = false,
-       for_keyword = false,
-       while_keyword = false;
+       found_logical_operator  = false,
+       for_keyword             = false,
+       while_keyword           = false;
 
   std::vector<TokenCoord> token_locations;  // It'll act like a stack
   std::string token = "";
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  for (int line_number = 0; line_number < n_lines; line_number++) {
-    bool add_extra_level = found_logical_operator;
-    bool in_line_comment = false;
+  for (int line_number      = 0; line_number < n_lines; line_number++) {
+    bool add_extra_level    = found_logical_operator;
+    bool in_line_comment    = false;
     bool starts_with_string = in_single_quoted_string || in_double_quoted_string
                               || in_long_string;
 
@@ -497,7 +499,7 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
     StringRef curr_line = code_lines[line_number];
 
     // Create a string from the iterator in the vector
-    std::string line = std::string(curr_line.start_pos, curr_line.end_pos);
+    std::string line   = std::string(curr_line.start_pos, curr_line.end_pos);
     int spaces_removed = line.length();
     if (!starts_with_string && !(is_line_comment(&line, 0) && !INDENT_COMMENTS)) {
       line = strip_leading_whitespace(&line);
@@ -508,10 +510,9 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
     trimmed_line.reserve(line_length); // performance trick that IMO never works
 
     for (int offset = 0; offset < line_length; offset++) {
-      std::string curr_char = std::string(1, line[offset]);
-      std::string next_char = (offset > (line_length - 2)) ? "" :
-                              line.substr(offset + 1, 1);
-      std::string prev_char = (offset == 0) ? "" : line.substr(offset - 1, 1);
+      std::string curr_char      = std::string(1, line[offset]);
+      std::string next_char      = (offset > (line_length - 2)) ? "" : line.substr(offset + 1, 1);
+      std::string prev_char      = (offset == 0) ? "" : line.substr(offset - 1, 1);
       std::string prev_prev_char = (offset < 2) ? "" :
                                    line.substr(offset - 2, 1);
 
@@ -734,7 +735,7 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
         }
         if (n_equal_signs != -999) {
           in_long_string = true;
-          equal_signs = n_equal_signs;
+          equal_signs    = n_equal_signs;
         }
       } else if (curr_char == "]" && in_long_string) {
         int n_equal_signs = -999;
