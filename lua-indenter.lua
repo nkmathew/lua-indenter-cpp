@@ -154,7 +154,7 @@ pushed to the list.
     - Fix for wrong detection of shebangs when a hash(#) is encountered at the  
       start of the line without the accompanying exclamation(!).  
  
-+ 8th January 2014
++ 8th February 2014
     - Fix for wrong spacing of exponential numbers that'd cause a syntax error.
 
 ###Shortcomings  
