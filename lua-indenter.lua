@@ -154,6 +154,8 @@ pushed to the list.
     - Fix for wrong detection of shebangs when a hash(#) is encountered at the  
       start of the line without the accompanying exclamation(!).  
  
++ 8th January 2014
+    - Fix for wrong spacing of exponential numbers that'd cause a syntax error.
 
 ###Shortcomings  
 
@@ -168,6 +170,11 @@ pushed to the list.
   extend to subsequent lines. This should't be too big a problem. You'll get the  
   correct indentation if you close your strings and ensure your code is  
   syntactically correct.  
+
++ It won't space an expression like this `result = DN2E+25` properly because  
+  it can only look back at most three characters(`prevPrevPrevChar`). Fixing  
+  this would require another variable to be passed(`prevPrevPrevPrevChar`).  
+  It looks like a bit too much...
 
 ]===]
 
@@ -238,6 +245,7 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
     and not currChar:find("[%])[:\n\r]") -- Don't add space if at the end of the line
     then
     if currChar:find("[%^>%<-/~+*]")
+      and not (currChar:find("[+-]") and prevChar:find("[eE]") and prevPrevChar:find("[0-9]"))
       and not prevChar:find("[({%[=,]") -- Don't add space after opening bracket
       then
       -- Add a space before operators(+, -, *, /) and the operands
@@ -266,6 +274,8 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       and not (prevChar == "-" and currChar == "[") -- Don't put a space btw square bracket and long comment marker
       and not (prevChar == ")" and currChar:find("[:,%[+-*/=^]")) -- Don't split sth like ("This"):find("i")
       and not (prevChar == ")" and currChar == "." and nextChar ~= ".") -- split sth like (func()).."\n"
+      and not (prevChar:find("[+-]") and prevPrevChar:find("[eE]") and
+               prevPrevPrevChar:find("[0-9]")) -- Don't split an exponential number `2e+5`
       then
       -- Add a space after operators(+, -, *, /) and the operands
       trimmedLine = trimmedLine .. " "
@@ -299,8 +309,8 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
   return trimmedLine
 end
 
-escaped = false
-inLongString = false
+escaped              = false
+inLongString         = false
 -- A long string can only be closed with the same number of equal signs.
 inSingleQuotedString = false
 inDoubleQuotedString = false
@@ -310,23 +320,23 @@ inDoubleQuotedString = false
 -- backslash at the end of the string. This means that if you don't close your
 -- strings, the rest of the file won't be indented the way you wanted.
 
-currIndent = 0
-equalSigns = -999 -- equal signs between square brackets in long strings/comments
+currIndent   = 0
+equalSigns   = -999 -- equal signs between square brackets in long strings/comments
 indentedCode = ""
-lineNumber = 0
-nextIndent = 0
+lineNumber   = 0
+nextIndent   = 0
 positionList = {} -- Store the indentation level
 
-ALIGN_BRACKETS = false
+ALIGN_BRACKETS    = false
 BASIC_INDENTATION = true
-INDENT_LEVEL = 2
-COMPACT = true
--- In case the line ends with an 'or' or 'and' or '=', the next line is indented
+INDENT_LEVEL      = 2
+COMPACT           = true
+-- In case the line ends with an 'or' or 'and' or ' = ', the next line is indented
 -- by EXTRA_LEVEL more spaces so that return values don't align with the
 -- 'return' keyword.
-EXTRA_LEVEL = 7
+EXTRA_LEVEL     = 7
 INDENT_COMMENTS = false
-OUTPUT = true
+OUTPUT          = true
 -- Process commandline arguments
 for _, v in ipairs(arg) do
   if v == "--no-basic" or v == "-nb" then
@@ -357,9 +367,9 @@ if #arg == 0 then
 end
 rawFile = assert(io.open(arg[1], "rb"), string.format("Invalid filename: `%s'", arg[1]))
 
-CR = "\r"
-LF = "\n"
-CRLF = CR .. LF
+CR         = "\r"
+LF         = "\n"
+CRLF       = CR .. LF
 lineEnding = ""
 
 slurpedContents = rawFile:read("*all") -- Slurp file contents
