@@ -70,6 +70,18 @@ file character by character; meaning it can do things like:
                                          second_val or
                                          third_val
 
+    --reduce-space, -rs  ## Reduce all extraneous inter-words space to one space.
+                            Setting this will destroy any aligned variables:
+                            e.g 
+                            This code:
+                                first_var  = 12
+                                second     = 45
+                                last       = "Last"
+                            will be formatted to:
+                                first_var = 12
+                                second = 45
+                                last ="Last"
+
       
 **TIP**: To get total alignment use both the **-nb** and **-ab** option. par example:  
       
@@ -156,6 +168,11 @@ pushed to the list.
  
 + 8th February 2014
     - Fix for wrong spacing of exponential numbers that'd cause a syntax error.
+
++ 3rd March 2014
+    - Any inter-word space is preserved by default. One has to pass the *--reduce-space*  
+      option if space removal is desired.
+
 
 ###Shortcomings  
 
@@ -294,9 +311,9 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
     end
   end
   --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if not (prevChar:find("[ \t]") and currChar:find("[ \t]")) and
-           not (prevChar == "" and currChar:find("[\t ]")) -- Make sure the first space is removed
-    and not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
+  if (not (prevChar:find("[ \t]") and currChar:find("[ \t]") and REDUCE_SPACE)) and
+    --      not (prevChar == "" and currChar:find("[\t ]")) -- Make sure the first space is removed
+     not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
     and not (nextChar:find("[})%],]") and currChar:find("[\t ]")) -- don't copy space before closing bracket
     then
     -- Trimming happens here. We only copy the character if the previous
@@ -337,6 +354,8 @@ COMPACT           = true
 EXTRA_LEVEL     = 7
 INDENT_COMMENTS = false
 OUTPUT          = true
+REDUCE_SPACE    = false
+
 -- Process commandline arguments
 for _, v in ipairs(arg) do
   if v == "--no-basic" or v == "-nb" then
@@ -351,6 +370,8 @@ for _, v in ipairs(arg) do
     OUTPUT = false
   elseif v == "--no-extra-level" or v == "-ne" then
     NO_EXTRA_LEVEL = true
+  elseif v == "--reduce-space" or v == "-rs" then
+    REDUCE_SPACE = true
   end
 end
 
