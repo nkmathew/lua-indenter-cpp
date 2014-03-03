@@ -55,7 +55,8 @@ bool ALIGN_BRACKETS    = false,
      COMPACT           = true,
      INDENT_COMMENTS   = false,
      OUTPUT            = true,
-     NO_EXTRA_LEVEL    = false;
+     NO_EXTRA_LEVEL    = false,
+     REDUCE_SPACE      = false;
 
 int INDENT_LEVEL = 2,
     EXTRA_LEVEL  = 7;
@@ -177,7 +178,9 @@ std::vector<StringRef> split(std::string *str, const std::string sep,
   // substrings in a vector to be used later. I borrowed StringRef from
   // a good answer in SO. My original implementation was very inefficient
   // with 200KB+ files. It involved copying the substrings to the vector and
-  // returning it. It was so slow that it would take 5 more seconds to split
+  // remap <F3> :set invhlsearch
+  // nnoremap <F5> :wa
+  // vmap  "*d  // returning it. It was so slow that it would take 5 more seconds to split
   // a 700KB file than the Lua version.
   const int vector_size = substring_count(str, &sep) + 1;
   const int sep_length = sep.length();
@@ -285,8 +288,8 @@ std::string append_char(std::string prev_char, std::string
       str += " ";
     }
   }
-  if (!(equals_any(prev_char, "\t ") && equals_any(curr_char, "\t "))
-      && !((prev_char == "") && equals_any(curr_char, "\t ")) // Don't copy any leading spaces
+  if (!(equals_any(prev_char, "\t ") && equals_any(curr_char, "\t ") && REDUCE_SPACE)
+      // && !((prev_char == "") && equals_any(curr_char, "\t ")) // Don't copy any leading spaces
       && !(equals_any(prev_char, "({[") && equals_any(curr_char, "\t "))
       && !(equals_any(next_char, "})],") && equals_any(curr_char, "\t "))) {
     // Trimming happens here. We only copy the character if the previous
@@ -399,7 +402,21 @@ std::string usage =
 "\n"
 "                              retval = first_val or\n"
 "                                     second_val or\n"
-"                                     third_val\n\n\n";
+"                                     third_val\n"
+"\n"
+"--reduce-space, -rs  ## Reduce all extraneous inter-words space to one space.\n"
+"                        Setting this will destroy any aligned variables:\n"
+"                        e.g \n"
+"                        This code:\n"
+"                            first_var  = 12\n"
+"                            second     = 45\n"
+"                            last       = \"Last\"\n"
+"                        will be formatted to:\n"
+"                            first_var = 12\n"
+"                            second = 45\n"
+"                            last =\"Last\"\n"
+""
+"\n\n";
 
 
 int main(int argc, char *argv[]) {
@@ -430,6 +447,10 @@ int main(int argc, char *argv[]) {
       if ((strcmp(argv[i], "-ne") == 0) ||
           (strcmp(argv[i], "-no-extra-level") == 0)) {
         NO_EXTRA_LEVEL = true;
+      }
+      if ((strcmp(argv[i], "-rs") == 0) ||
+          (strcmp(argv[i], "-reduce-space") == 0)) {
+        REDUCE_SPACE = true;
       }
     }
 
@@ -720,7 +741,7 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
         }
       }
       // ~~~~~~~~~~~~~~~~~~[ Handle Long comments/strings ]~~~~~~--[[   ]]~~~~~~~~~~
-      // Since we don't have regular expressions in STL. We'll have to do it
+      // Since we don't have regular expressions in stdlib. We'll have to do it
       // char by char
       if (curr_char == "[" && !(in_long_string || in_single_quoted_string ||
                                 in_double_quoted_string || in_line_comment)) {
