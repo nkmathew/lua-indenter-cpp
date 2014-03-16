@@ -59,7 +59,8 @@ bool ALIGN_BRACKETS    = false,
      REDUCE_SPACE      = false;
 
 int INDENT_LEVEL = 2,
-    EXTRA_LEVEL  = 7;
+    EXTRA_LEVEL  = 7,
+    TABSIZE      = 0;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Function Prototypes ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -415,7 +416,11 @@ std::string usage =
 "                            first_var = 12\n"
 "                            second = 45\n"
 "                            last =\"Last\"\n"
-""
+"\n"
+"--tabsize=<num>      ## Defines the tab-to-space ratio. Passing this variable causes\n"
+"                        tabs to be used even if --spaces arg is passed \n"
+"\n"
+"--spaces=<num>       ## Space increment\n"
 "\n\n";
 
 
@@ -452,6 +457,26 @@ int main(int argc, char *argv[]) {
           (strcmp(argv[i], "-reduce-space") == 0)) {
         REDUCE_SPACE = true;
       }
+      if (strncmp(argv[i], "--spaces=", 9) == 0){
+          int length = strlen(argv[i]);
+          int spaces = 0;
+          if (length > 9){
+              // Assumes that no one indents by 10 or more spaces
+              char val[2] = {argv[i][9], '\0'};
+              spaces = atoi(val);
+              INDENT_LEVEL = spaces;
+          }
+      }
+      if (strncmp(argv[i], "--tabsize=", 10) == 0){
+          int length = strlen(argv[i]);
+          int tabs = 0;
+          if (length > 10){
+              char val[2] = {argv[i][10], '\0'};
+              tabs = atoi(val);
+              TABSIZE = tabs;
+              INDENT_LEVEL = TABSIZE;
+          }
+      }
     }
 
     if (NO_EXTRA_LEVEL) {
@@ -469,6 +494,16 @@ int main(int argc, char *argv[]) {
     std::cout << usage << std::endl;
   }
   return 0;
+}
+
+std::string build_string(bool use_tabs, int indent_size, int tab_size){
+    std::string indent_string(indent_size, ' ');
+    if (use_tabs){
+        int n_tabs = indent_size / tab_size;
+        int n_spaces = indent_size % tab_size;
+        indent_string = std::string(n_tabs, '\t') + std::string(n_spaces, ' ');
+    }
+    return indent_string;
 }
 
 void indent_code(std::string *raw_code, std::fstream *indented_file) {
@@ -815,14 +850,14 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
         next_indent = 0;
       }
       if (add_extra_level) {
-        std::string indented_line(curr_indent + EXTRA_LEVEL, ' ');
+        std::string indented_line = build_string(TABSIZE != 0, curr_indent + EXTRA_LEVEL, TABSIZE);
         indented_line += trimmed_line;
         if (OUTPUT) {
           std::cout << remove_chars(indented_line, "\r\n") << std::endl;
         }
         write_string(indented_file, &indented_line);
       } else {
-        std::string indented_line(curr_indent, ' ');
+        std::string indented_line = build_string(TABSIZE != 0, curr_indent, TABSIZE);
         indented_line += trimmed_line;
         if (OUTPUT) {
           std::cout << remove_chars(indented_line, "\r\n") << std::endl;
