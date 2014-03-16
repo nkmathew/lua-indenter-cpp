@@ -85,7 +85,7 @@ file character by character; meaning it can do things like:
     
     --spaces=<num>       ## Controls the indentation size
 
-    --tabs=<num>         ## Use tabs instead of spaces. You might get a mixture
+    --tabsize=<num>      ## Use tabs instead of spaces. You might get a mixture
                             of tabs and spaces when you use the **-nb** option
                             expecially when the words don't start on tabstops.
 
@@ -190,7 +190,7 @@ pushed to the list.
 
 + It also doesn't process line continuation characters in strings. It assumes  
   that single-quoted and double-quoted strings behave like long strings, i.e can  
-  extend to subsequent lines. This should't be too big a problem. You'll get the  
+  extend to subsequent lines. This shouldn't be too big a problem. You'll get the  
   correct indentation if you close your strings and ensure your code is  
   syntactically correct.  
 
@@ -384,7 +384,7 @@ for _, v in ipairs(arg) do
     if spaces then
       INDENT_LEVEL = spaces
     end
-  elseif v:find("--tabs=") then
+  elseif v:find("--tabsize=") then
     local tabs = v:gmatch("%d+")()
     if tabs then
       TABSIZE = tabs
