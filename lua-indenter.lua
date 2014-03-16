@@ -82,7 +82,13 @@ file character by character; meaning it can do things like:
                                 second = 45
                                 last ="Last"
 
-      
+    
+    --spaces=<num>       ## Controls the indentation size
+
+    --tabs=<num>         ## Use tabs instead of spaces. You might get a mixture
+                            of tabs and spaces when you use the **-nb** option
+                            expecially when the words don't start on tabstops.
+
 **TIP**: To get total alignment use both the **-nb** and **-ab** option. par example:  
       
         describe('communicating with clients',  
@@ -173,10 +179,10 @@ pushed to the list.
     - Any inter-word space is preserved by default. One has to pass the *--reduce-space*  
       option if space removal is desired.
 
++ 16th March 2014
+    - Tabbed indentation implemented.
 
 ###Shortcomings  
-
-+ It doesn't indent with tabs.  
 
 + It doesn't handle adjacent long comments/string markers very well. It uses a  
   simple  pattern to match the square brackets and won't know that the comment has  
@@ -239,7 +245,6 @@ function mapConcatenate(tbl, char)
   end
   return table
 end
-
 
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Takes a string, an index and the characters adjacent to the character at that
@@ -355,6 +360,7 @@ EXTRA_LEVEL     = 7
 INDENT_COMMENTS = false
 OUTPUT          = true
 REDUCE_SPACE    = false
+TABSIZE         = 0
 
 -- Process commandline arguments
 for _, v in ipairs(arg) do
@@ -372,6 +378,18 @@ for _, v in ipairs(arg) do
     NO_EXTRA_LEVEL = true
   elseif v == "--reduce-space" or v == "-rs" then
     REDUCE_SPACE = true
+  elseif v:find("--spaces=") then
+    -- At least one number has to be specified
+    local spaces = v:gmatch("%d+")()
+    if spaces then
+      INDENT_LEVEL = spaces
+    end
+  elseif v:find("--tabs=") then
+    local tabs = v:gmatch("%d+")()
+    if tabs then
+      TABSIZE = tabs
+      INDENT_LEVEL = TABSIZE
+    end
   end
 end
 
@@ -697,14 +715,23 @@ for _, line in ipairs(codeLines) do
     if addExtraLevel then
       -- increase the indentation by EXTRA_LEVEL spaces if the line ends with
       -- 'and', 'or' or '='
-      indentedLine = string.rep(" ", currIndent + EXTRA_LEVEL) .. trimmedLine
+      indentString = string.rep(" ", currIndent + EXTRA_LEVEL)
+      if TABSIZE ~= 0 then
+        -- Replace the spaces with tabs
+        indentString = indentString:gsub(string.rep(' ', TABSIZE), "\t")
+      end
+      indentedLine = indentString .. trimmedLine
       if OUTPUT then
         io.write((indentedLine:gsub("\r\n?", '\n')))
       end
       indentedFile:write(indentedLine)
     else
       -- Otherwise indent using the current indentation
-      indentedLine = string.rep(" ", currIndent) .. trimmedLine
+      indentString = string.rep(" ", currIndent)
+      if TABSIZE ~= 0 then
+        indentString = indentString:gsub(string.rep(' ', TABSIZE), "\t")
+      end
+      indentedLine = indentString .. trimmedLine
       if OUTPUT then
         io.write((indentedLine:gsub("\r\n?", '\n')))
       end
