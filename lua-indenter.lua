@@ -3,26 +3,8 @@ help = [===[
 
 ## lua-indenter.lua
 **Started:** December 07, 2013, 08:37:25  
-**Date:** December 15, 2013  
-**Author:** nkmathew <kipkoechmathew@gmail.com>  
-**Home:** [http://gist.github.com/nkmathew/7969358](http://gist.github.com/nkmathew/7969358)  
-**Cloning:** https://gist.github.com/7969358.git  
+**Date:**    December 15, 2013  
 
-This is a not so primitive Lua indenter that tries to do as much 'beautification'  
-as possible. It's different from most indenters out there in that instead of  
-simply iterating through every line and matching keywords, it walks the whole  
-file character by character; meaning it can do things like:  
-
-+ Detect string and comment regions that shouldn't be indented.  
-+ Align head and terminating keywords anywhere on the line:  
-
-                hypotenuse = function(base, height)  
-                               return math.sqrt(base * base + height * height)  
-                             end  
-
-+ Insert spaces between operators without affecting strings or comments, something  
-  that can be quite hard with regular expressions(at least with Lua's)  
-  
 ###Usage  
 
     lua-indenter.lua <filename> [[--no-basic] [--indent-comments] [--no-compact] [--align-brackets]]  
@@ -122,65 +104,6 @@ file character by character; meaning it can do things like:
                 }  
               end)  
           end)  
-      
-  
-###How it works  
-
-It iterates through every character in the string/file and when a keyword like *if* or  
-*function* is found, it's position is pushed to a list and later popped back when an end  
-of block keyword like *end* and *until* is found. That popped position is used to restore  
-the *end* or *until* keyword to the same level as the *function* or *if* keyword.  
-If **--basic** option is used, the MO is the same only that instead of storing the  
-position of the keyword, the current level is added to the indentation level and  
-pushed to the list.  
-
-###Revision History
-
-+ 18th December 2013  
-    - Can now handle files with CR line endings.  
-    - Does not insert an extra line at the end of the file.  
-    - Preserves the file's line ending
-    - Does not split the negative sign and the number in calculations.
-
-+ 23rd December 2013  
-    - All CR characters are replaced with LF before being printed to the console  
-      so that all the content can be seen.  
-
-+ 25th December 2013  
-    - Fix for failed detection of the end of a long comment/string caused by a  
-      wrong regex pattern.  
-    - Prevent a space from being added at the end of the line if the line ends  
-      with an operator. It causes unnecessary generation of a diff file.  
-
-+ 30th December 2013  
-    - Can now handle for/while constructs that have the 'do' keyword in a different line.  
-      Like when you use a 'literal' iterator in the 'for' header.
-      
-              -- a contrived example(from the PiL book)
-              lst = {"GitHub", "BitBucket", "Git", "Subversion"}  
-              for vcs in (function (tbl)  
-                    local index = 0  
-                    return function () index = index + 1; return tbl[index] end
-                  end) (lst) do
-                print(vcs)
-              end
-
-+ 2nd January 2014
-    - Issues warning when excess or unmatched brackets are encountered.  
-
-+ 20th January 2014
-    - Fix for wrong detection of shebangs when a hash(#) is encountered at the  
-      start of the line without the accompanying exclamation(!).  
- 
-+ 8th February 2014
-    - Fix for wrong spacing of exponential numbers that'd cause a syntax error.
-
-+ 3rd March 2014
-    - Any inter-word space is preserved by default. One has to pass the *--reduce-space*  
-      option if space removal is desired.
-
-+ 16th March 2014
-    - Tabbed indentation implemented.
 
 ###Shortcomings  
 
@@ -321,11 +244,6 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
      not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
     and not (nextChar:find("[})%],]") and currChar:find("[\t ]")) -- don't copy space before closing bracket
     then
-    -- Trimming happens here. We only copy the character if the previous
-    -- character is not a space or a tab or a zero length string that way it
-    -- strips all whitespace before the string. The last part of the test
-    -- expression makes sure all trailing spaces are removed by not copying the
-    -- first whitespace
     trimmedLine = trimmedLine .. currChar
   end
   return trimmedLine
@@ -336,11 +254,6 @@ inLongString         = false
 -- A long string can only be closed with the same number of equal signs.
 inSingleQuotedString = false
 inDoubleQuotedString = false
--- I'm being lazy here. These two variables should actually be in the loop
--- because quoted strings cannot extend to the next lines without the backslash
--- at the end.  By placing the variables here, I won't have to test for the
--- backslash at the end of the string. This means that if you don't close your
--- strings, the rest of the file won't be indented the way you wanted.
 
 currIndent   = 0
 equalSigns   = -999 -- equal signs between square brackets in long strings/comments
