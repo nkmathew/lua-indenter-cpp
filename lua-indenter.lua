@@ -159,7 +159,6 @@ function split(text, sep)
   return lines
 end
 
-
 function mapConcatenate(tbl, char)
   -- Maps the character to every string in the table.
   local table = tbl
@@ -195,8 +194,8 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       then
       -- Add a space before operators(+, -, *, /) and the operands
       if not (currChar == "-" and prevChar == "-") then
-        -- The test prevents it from splitting the two dash signs
-        -- that indicate a comment
+        -- The test prevents it from splitting the two dash signs that indicate a
+        -- comment
         trimmedLine = trimmedLine .. " "
       end
     elseif currChar == "=" and not prevChar:find("[=>%<~]") then
@@ -207,7 +206,7 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       trimmedLine = trimmedLine .. " "
     end
   end
-  if not currChar:find("[%])} \r\n\t]") then
+  if not currChar:find("[%])}; \r\n\t]") then
     -- If the next character after the operator is not a space add
     -- one. If the current character is a square bracket, don't add a
     -- space because it is part of a long string or comment
@@ -240,7 +239,6 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
   end
   --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if (not (prevChar:find("[ \t]") and currChar:find("[ \t]") and REDUCE_SPACE)) and
-    --      not (prevChar == "" and currChar:find("[\t ]")) -- Make sure the first space is removed
      not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
     and not (nextChar:find("[})%],]") and currChar:find("[\t ]")) -- don't copy space before closing bracket
     then
@@ -662,4 +660,3 @@ assert(not inSingleQuotedString, "You have an unterminated single quoted string"
 assert(not inDoubleQuotedString, "You have an unterminated double quoted string")
 
 assert(#positionList == 0, "You have unfinished blocks")
-
