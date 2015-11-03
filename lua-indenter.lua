@@ -216,7 +216,7 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       and not (prevPrevPrevChar:find("[=*^/]") and prevChar:find("[+-]")) -- Don't split sign in var = -3
       and not (currChar == "-" and prevChar:find("[-*/^]")) -- Don't split comment markers
       and not (prevChar == "-" and currChar == "[") -- Don't put a space btw square bracket and long comment marker
-      and not (prevChar == ")" and currChar:find("[:,%[+-*/=^]")) -- Don't split sth like ("This"):find("i")
+      and not (prevChar == ")" and currChar:find("[:,%[%+-*/=^]")) -- Don't split sth like ("This"):find("i")
       and not (prevChar == ")" and currChar == "." and nextChar ~= ".") -- split sth like (func()).."\n"
       and not (prevChar:find("[+-]") and prevPrevChar:find("[eE]") and
                prevPrevPrevChar:find("[0-9]")) -- Don't split an exponential number `2e+5`
