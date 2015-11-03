@@ -52,7 +52,7 @@ help = [===[
                                          second_val or
                                          third_val
 
-    --reduce-space, -rs  ## Reduce all extraneous inter-words space to one space.
+    --reduce-space, -rs  ## Reduce all extraneous inter-word space to one space.
                             Setting this will destroy any aligned variables:
                             e.g 
                             This code:
@@ -159,7 +159,6 @@ function split(text, sep)
   return lines
 end
 
-
 function mapConcatenate(tbl, char)
   -- Maps the character to every string in the table.
   local table = tbl
@@ -178,13 +177,13 @@ end
 -- This function is called for every iteration of the string.
 --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrevPrevChar)
-  local trimmedLine = str
   -- This functions contains hacks that enable the program to space operators
   -- correctly.  I had to experiment a little before getting them right.
   -- NOTE: The statements below don't actually add space after a character.
   -- Adding a space after a plus sign(+) for example is done by testing if the
   -- previous character is plus sign(+) and appending a space before appending
   -- the current character.
+  local padding = ""
   if not prevChar:find("[\t ]") -- No need to add a space if there's already one
     and i ~= 1 -- Don't add a space if the operator is the first character
     and not currChar:find("[%])[:\n\r]") -- Don't add space if at the end of the line
@@ -195,19 +194,19 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       then
       -- Add a space before operators(+, -, *, /) and the operands
       if not (currChar == "-" and prevChar == "-") then
-        -- The test prevents it from splitting the two dash signs
-        -- that indicate a comment
-        trimmedLine = trimmedLine .. " "
+        -- The test prevents it from splitting the two dash signs that indicate a
+        -- comment
+        padding = padding .. " "
       end
     elseif currChar == "=" and not prevChar:find("[=>%<~]") then
       -- Add a space before == and = without splitting ==
-      trimmedLine = trimmedLine .. " "
+      padding = padding .. " "
     elseif currChar == "." and not prevChar:find("[.){}(,]") and nextChar == "." then
       -- Add a space before ..
-      trimmedLine = trimmedLine .. " "
+      padding = padding .. " "
     end
   end
-  if not currChar:find("[%])} \r\n\t]") then
+  if not currChar:find("[%])}; \r\n\t]") then
     -- If the next character after the operator is not a space add
     -- one. If the current character is a square bracket, don't add a
     -- space because it is part of a long string or comment
@@ -217,36 +216,35 @@ function AppendChar(str, prevChar, currChar, nextChar, prevPrevChar, i, prevPrev
       and not (prevPrevPrevChar:find("[=*^/]") and prevChar:find("[+-]")) -- Don't split sign in var = -3
       and not (currChar == "-" and prevChar:find("[-*/^]")) -- Don't split comment markers
       and not (prevChar == "-" and currChar == "[") -- Don't put a space btw square bracket and long comment marker
-      and not (prevChar == ")" and currChar:find("[:,%[+-*/=^]")) -- Don't split sth like ("This"):find("i")
+      and not (prevChar == ")" and currChar:find("[:,%[%+-*/=^]")) -- Don't split sth like ("This"):find("i")
       and not (prevChar == ")" and currChar == "." and nextChar ~= ".") -- split sth like (func()).."\n"
       and not (prevChar:find("[+-]") and prevPrevChar:find("[eE]") and
                prevPrevPrevChar:find("[0-9]")) -- Don't split an exponential number `2e+5`
       then
       -- Add a space after operators(+, -, *, /) and the operands
-      trimmedLine = trimmedLine .. " "
+      padding = padding .. " "
     elseif prevPrevChar:find("[~>%<=]") and prevChar == "=" and currChar ~= " " then
       -- Add a space after <=, =>, ~=, ==
-      trimmedLine = trimmedLine .. " "
+      padding = padding .. " "
     elseif currChar ~= "=" and prevChar:find("[>%<]") then
       -- Add a space after <, > without affecting <=, =>
-      trimmedLine = trimmedLine .. " "
+      padding = padding .. " "
     elseif prevChar == "=" and not prevPrevChar:find("[>%<=~]") and currChar ~= "=" then
       -- Add a space after = without splitting ==
-      trimmedLine = trimmedLine .. " "
+      padding = padding .. " "
     elseif currChar ~= "." and prevChar == "." and prevPrevChar == "." then
       -- Add a space after ..
-      trimmedLine = trimmedLine .. " "
+      padding = padding .. " "
     end
   end
   --~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if (not (prevChar:find("[ \t]") and currChar:find("[ \t]") and REDUCE_SPACE)) and
-    --      not (prevChar == "" and currChar:find("[\t ]")) -- Make sure the first space is removed
      not (prevChar:find("[({%[]") and currChar:find("[\t ]")) -- don't copy space after bracket
     and not (nextChar:find("[})%],]") and currChar:find("[\t ]")) -- don't copy space before closing bracket
     then
-    trimmedLine = trimmedLine .. currChar
+    return str .. padding .. currChar
   end
-  return trimmedLine
+  return str
 end
 
 escaped              = false
@@ -662,4 +660,3 @@ assert(not inSingleQuotedString, "You have an unterminated single quoted string"
 assert(not inDoubleQuotedString, "You have an unterminated double quoted string")
 
 assert(#positionList == 0, "You have unfinished blocks")
-
