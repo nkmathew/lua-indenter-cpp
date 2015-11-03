@@ -40,8 +40,8 @@ struct TokenCoord {
   std::string token;
 };
 
-// The struct holds the pointers to the start and end positions of the lines in
-//the files. The lines are going to be retrieved on demand.
+// The struct holds the pointers to the start and end positions of the lines in the
+// files. The lines are going to be retrieved on demand.
 struct StringRef {
   StringRef(std::string::const_iterator start, std::string::const_iterator end)
     : start_pos(start), end_pos(end) {}
@@ -255,7 +255,7 @@ std::string append_char(std::string prev_char, std::string
       str += " ";
     }
   }
-  if (!equals_any(curr_char, "])} \r\n\t")) {
+  if (!equals_any(curr_char, ";])} \r\n\t")) {
     // If the next character after the operator is not a space add
     // one. If the current character is a square bracket, don't add a
     // space because it is part of a long string or comment
@@ -889,4 +889,3 @@ void indent_code(std::string *raw_code, std::fstream *indented_file) {
     }
   }
 }
-
