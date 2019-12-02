@@ -4,6 +4,7 @@ help = [===[
 ## lua-indenter.lua
 **Started:** December 07, 2013, 08:37:25  
 **Date:**    December 15, 2013  
+**License:** MIT
 
 ###Usage  
 
