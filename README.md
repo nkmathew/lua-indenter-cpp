@@ -12,7 +12,7 @@ Lua code formatter written in Lua, then translated to C++
     --no-compact, -nc       ## Instructs the program to indent without messing with the
                                program layout like aligned equal signs or aligned tables(like the `network`
                                table below)
-
+    {% raw %}
     --align-brackets, -ab   ## Aligns brackets like this:
                                 network = {{name = "grauna",  IP = "210.26.30.34"},
                                            {name = "arraial", IP = "210.26.30.23"},
@@ -21,7 +21,7 @@ Lua code formatter written in Lua, then translated to C++
                                            }
                                 when ALIGN_BRACKETS is false, brackets will cause an
                                 increase in the indentation level by INDENT_LEVEL spaces.
-
+    {% endraw %}
     --no-basic, -nb        ## Strives to align the head keyword with the terminating
                                 keyword no matter where it is in the line
                               It's default status is false. Using this option will give
