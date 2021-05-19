@@ -654,7 +654,7 @@ end
 
 indentedFile:close()
 assert(os.remove(arg[1])) -- Deletes the original file
-assert(os.rename("temp-file", arg[1]))
+assert(os.execute("mv temp-file " .. arg[1]))
 
 assert(not inLongString, "You have unterminated long strings/comments")
 assert(not inSingleQuotedString, "You have an unterminated single quoted string")
