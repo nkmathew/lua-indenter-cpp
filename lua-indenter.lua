@@ -1,4 +1,5 @@
-#!/usr/bin/lua5.2
+#!/usr/bin/lua
+
 help = [===[  
 
 ## lua-indenter.lua
